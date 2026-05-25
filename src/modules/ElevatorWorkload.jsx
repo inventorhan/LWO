@@ -222,13 +222,15 @@ export default function ElevatorWorkload({
             <input className="input-field" type="number" step="1" min={1} value={basicInfo.stackLevel ?? 4}
               onChange={e => updateElevatorBasic({ stackLevel: e.target.value })} placeholder="예: 4" />
           </div>
+        </div>
+        <div className="calc-grid">
+          <div className="result-box tone-middle">
+            <span className="result-box__label">실제 사용 적재 면적 = Σ(가로×세로×개수) ÷ {stackLevel}</span>
+            <span className="result-box__value">{usedAreaM2 > 0 ? `${usedAreaM2.toFixed(1)} m²` : '—'}</span>
+          </div>
           <div className="result-box tone-slate">
             <span className="result-box__label">E/V 면적 = 가로 × 세로</span>
             <span className="result-box__value">{evAreaM2 > 0 ? `${evAreaM2.toFixed(1)} m²` : '—'}</span>
-          </div>
-          <div className="result-box tone-blue">
-            <span className="result-box__label">실제 사용 적재 면적 = Σ(가로×세로×개수) ÷ {stackLevel}</span>
-            <span className="result-box__value">{usedAreaM2 > 0 ? `${usedAreaM2.toFixed(1)} m²` : '—'}</span>
           </div>
           <div className="result-box full-width tone-final">
             <span className="result-box__label">E/V 적재율 = 실적재 / E/V 면적</span>

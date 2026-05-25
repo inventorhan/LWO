@@ -81,6 +81,8 @@ Cycle Time = 3600 ÷ 운행 횟수`}</HintFormula>
             <input className="input-field" type="number" step="0.1" min={0} value={f.loadQty || ''}
               onChange={e => set('loadQty', e.target.value)} />
           </div>
+        </div>
+        <div className="calc-grid calc-grid--three">
           <div className="result-box tone-slate">
             <span className="result-box__label">UPH = (3600 / Tact) × 회수율</span>
             <span className="result-box__value">{fmtN(uph, '', 1)}</span>
