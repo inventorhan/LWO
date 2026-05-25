@@ -8,7 +8,7 @@ LWO 물류 분석 Tool의 모든 기술 문서가 모인 폴더입니다.
 |------|------|------|
 | **[PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md)** | 개발자 / 인계 받는 사람 | 전체 프로젝트 구조·기술 스택·빌드 흐름 종합 정리 |
 | **[CHANGELOG.md](./CHANGELOG.md)** | 모두 | 버전별 변경 이력 |
-| **[manual.html](./manual.html)** | 일반 사용자 / 교육생 | 9개 모듈 사용 설명서 (브라우저로 열기) |
+| **[manual.html](./manual.html)** | 일반 사용자 / 교육생 | 8개 메뉴와 9가지 분석 사용 설명서 (브라우저로 열기) |
 | **[privacy.html](./privacy.html)** | 사용자 | 개인정보처리방침 |
 | **[index.html](./index.html)** | — | 앱 본체 사본 (legacy 백업) |
 
