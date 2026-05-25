@@ -2,8 +2,6 @@ import { useMemo } from 'react'
 import { n, fmtN } from '../shared/utils/common'
 import HelpHint, { HintFormula, HintNote } from '../shared/components/HelpHint'
 
-const RATE_OPTIONS = [0.5, 0.6, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0]
-
 export default function AmrCalculation({ data, updateData }) {
   const f = data || {}
   const set = (k, v) => updateData({ [k]: v })
@@ -33,14 +31,14 @@ export default function AmrCalculation({ data, updateData }) {
   const roundTripMin = roundTripSec / 60
 
   /* ── 필요 대수 (PPT 요청: 1.2대 → Round-up → 2대, +Spare) ── */
-  /* 원단위 = 왕복시간 / Cycle (실수). 가동율로 나눈 뒤 ceil 하여 최종 대수 */
+  /* 원단위 = 왕복시간 / Cycle (실수). 여유율을 곱한 뒤 ceil 하여 최종 대수 */
   const baseRaw = useMemo(() =>
     amrCycleTime > 0 ? roundTripSec / amrCycleTime : 0,
     [roundTripSec, amrCycleTime]
   )
 
-  const operationRate = n(f.operationRate) || 0.8
-  const adjustedRaw = operationRate > 0 ? baseRaw / operationRate : 0
+  const amrMargin = n(f.operationRate) || 1.2
+  const adjustedRaw = baseRaw * amrMargin
   /* 결과가 1.2대 이면 무조건 2대로 — Math.ceil */
   const amrBaseUnits = baseRaw > 0 ? Math.ceil(baseRaw) : 0
   const amrAdjustedUnits = adjustedRaw > 0 ? Math.ceil(adjustedRaw) : 0
@@ -91,7 +89,7 @@ Cycle Time = 3600 ÷ 운행 횟수`}</HintFormula>
             <span className="result-box__label">AMR 운행 횟수 = UPH / 장입수량</span>
             <span className="result-box__value">{fmtN(amrRunCount, '회', 1)}</span>
           </div>
-          <div className="result-box tone-dark">
+          <div className="result-box tone-final">
             <span className="result-box__label">AMR 1회 Cycle Time = 3600 / 운행횟수</span>
             <span className="result-box__value">{fmtN(amrCycleTime, '초', 1)}</span>
           </div>
@@ -146,7 +144,7 @@ Total 언로딩    = 언로딩 횟수 × 시간`}</HintFormula>
             <input className="input-field" type="number" step="0.1" min={0} value={f.loadTime || ''}
               onChange={e => set('loadTime', e.target.value)} />
           </div>
-          <div className="result-box full-width tone-slate">
+          <div className="result-box full-width tone-final">
             <span className="result-box__label">Total 로딩 시간</span>
             <span className="result-box__value">{fmtN(totalLoadSec, '초', 1)}</span>
           </div>
@@ -165,7 +163,7 @@ Total 언로딩    = 언로딩 횟수 × 시간`}</HintFormula>
             <input className="input-field" type="number" step="0.1" min={0} value={f.unloadTime || ''}
               onChange={e => set('unloadTime', e.target.value)} />
           </div>
-          <div className="result-box full-width tone-slate">
+          <div className="result-box full-width tone-final">
             <span className="result-box__label">Total 언로딩 시간</span>
             <span className="result-box__value">{fmtN(totalUnloadSec, '초', 1)}</span>
           </div>
@@ -174,7 +172,7 @@ Total 언로딩    = 언로딩 횟수 × 시간`}</HintFormula>
         {/* 로딩+언로딩 합계 */}
         <div style={{ height: 1, background: 'var(--color-card-border)', margin: '14px 0' }} />
         <div className="input-grid">
-          <div className="result-box full-width" style={{ background: '#B45309' }}>
+          <div className="result-box full-width tone-final">
             <span className="result-box__label">Total 로딩 + 언로딩 시간</span>
             <span className="result-box__value">{fmtN(totalLoadUnloadSec, '초', 1)}</span>
           </div>
@@ -194,42 +192,40 @@ Total 언로딩    = 언로딩 횟수 × 시간`}</HintFormula>
           </HelpHint>
         </div>
         <div className="input-grid">
-          <div className="result-box tone-blue full-width">
+          <div className="result-box tone-final">
             <span className="result-box__label">총 왕복시간(초) = (왕복거리 / Speed) + 로딩언로딩</span>
             <span className="result-box__value">{fmtN(roundTripSec, '초', 1)}</span>
           </div>
-          <div className="result-box tone-dark full-width">
+          <div className="result-box tone-blue">
             <span className="result-box__label">총 왕복시간(분)</span>
             <span className="result-box__value">{fmtN(roundTripMin, '분', 2)}</span>
           </div>
         </div>
       </div>
 
-      {/* 4) 실제 AMR 필요 대수 — 가동률 select + Round-up + Spare */}
+      {/* 4) 실제 AMR 필요 대수 — 여유율 입력 + Round-up + Spare */}
       <div className="section-card">
         <div className="section-title">
           실제 AMR 필요 대수
           <HelpHint title="실제 AMR 필요 대수">
-            <p>가동율과 예비 대수를 반영한 <b>최종 도입 필요 대수</b>입니다.</p>
-            <HintFormula>{`원단위        = ⌈ 총 왕복시간 ÷ Cycle ⌉
-                (예: 1.2 → 2대)
-가동율 적용  = ⌈ 원단위 ÷ 가동율 ⌉
-                (충전·수리 등 시간 보정)
-필요 대수    = 가동율 적용 + Spare(예비)`}</HintFormula>
+            <p>여유율과 예비 대수를 반영한 <b>최종 도입 필요 대수</b>입니다.</p>
+            <HintFormula>{`원단위        = 총 왕복시간 ÷ Cycle
+                (원단위는 소수와 올림값을 함께 표시)
+여유율 적용  = 원단위 × AMR 여유율
+                (충전·수리·동선 여유 보정)
+필요 대수    = ⌈ 여유율 적용 ⌉ + Spare(예비)`}</HintFormula>
             <ul style={{ paddingLeft: 18, margin: '6px 0' }}>
-              <li><b>AMR 가동율 (0~1)</b>: 1일 중 실제 가동 비율. 보통 0.8</li>
+              <li><b>AMR 여유율</b>: 0.9, 1.2, 1.8처럼 소수점으로 직접 입력</li>
               <li><b>Spare</b>: 갑작스러운 고장 대비 (보통 1)</li>
             </ul>
-            <HintNote type="ok">⌈ ⌉ 는 올림(ceiling) — 소수는 무조건 다음 정수로 올라갑니다.</HintNote>
+            <HintNote type="ok">최종 필요 대수는 소수점을 올림한 뒤 Spare를 더합니다.</HintNote>
           </HelpHint>
         </div>
         <div className="input-grid">
           <div className="input-group">
-            <div className="input-label-row"><span className="input-label">AMR 가동율 (0~1)</span></div>
-            <select className="input-field" value={f.operationRate ?? 0.8}
-              onChange={e => set('operationRate', parseFloat(e.target.value))}>
-              {RATE_OPTIONS.map(r => <option key={r} value={r}>{r.toFixed(2)}</option>)}
-            </select>
+            <div className="input-label-row"><span className="input-label">AMR 여유율</span></div>
+            <input className="input-field" type="number" min={0} step="0.1" value={f.operationRate ?? 1.2}
+              onChange={e => set('operationRate', e.target.value)} placeholder="예: 1.2" />
           </div>
           <div className="input-group">
             <div className="input-label-row"><span className="input-label">AMR Spare (대)</span></div>
@@ -237,25 +233,25 @@ Total 언로딩    = 언로딩 횟수 × 시간`}</HintFormula>
               onChange={e => set('spare', e.target.value)} />
           </div>
 
-          <div className="result-box tone-slate full-width">
-            <span className="result-box__label">AMR 원단위 = ⌈ 총왕복시간 / Cycle ⌉ (소수→올림)</span>
+          <div className="result-box tone-blue full-width">
+            <span className="result-box__label">AMR 원단위 = 총왕복시간 / AMR Cycle Time (소수 → 올림)</span>
             <span className="result-box__value">
               {baseRaw > 0
                 ? <>{baseRaw.toFixed(2)} → <span style={{ color: '#F59E0B' }}>{amrBaseUnits}대</span></>
                 : '—'}
             </span>
           </div>
-          <div className="result-box tone-slate full-width">
-            <span className="result-box__label">가동율 적용 = ⌈ 원단위 / 가동율 ⌉ (충전, 수리 등 시간)</span>
+          <div className="result-box tone-blue full-width">
+            <span className="result-box__label">여유율 적용 AMR 수량 = AMR 원단위 × AMR 여유율</span>
             <span className="result-box__value">
               {adjustedRaw > 0
                 ? <>{adjustedRaw.toFixed(2)} → <span style={{ color: '#F59E0B' }}>{amrAdjustedUnits}대</span></>
                 : '—'}
             </span>
           </div>
-          <div className="result-box full-width" style={{ background: '#A50034', padding: '14px 16px' }}>
+          <div className="result-box full-width tone-final" style={{ padding: '14px 16px' }}>
             <span className="result-box__label" style={{ fontSize: '0.85rem' }}>
-              ⭐ AMR 필요 대수 = ⌈ 원단위 / 가동율 ⌉ + Spare
+              ⭐ AMR 필요 대수 = ⌈ 여유율 적용 AMR 수량 ⌉ + Spare
             </span>
             <span className="result-box__value" style={{ fontSize: '1.5rem' }}>
               {amrRequired > 0 ? `${amrRequired}대` : '—'}

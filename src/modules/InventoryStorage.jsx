@@ -46,7 +46,7 @@ export default function InventoryStorage({ data, updateData }) {
   const customerOpsStock = useMemo(() => unloadQty + waitQty + customerSafeQty,
     [unloadQty, waitQty, customerSafeQty])
 
-  /* ── 4. 최종 적정 재고 ── */
+  /* ── 4. Total 적정 재고 ── */
   const finalStock = useMemo(() => appliedShortageQty + leadTimeStock + customerOpsStock,
     [appliedShortageQty, leadTimeStock, customerOpsStock])
 
@@ -116,18 +116,6 @@ export default function InventoryStorage({ data, updateData }) {
             <input className="input-field" type="number" step="0.1" min={0} value={f.customerNightTime || ''}
               onChange={e => set('customerNightTime', e.target.value)} placeholder="예: 4" />
           </div>
-          <div className="result-box tone-slate">
-            <span className="result-box__label">고객 주간 생산량 = UPH × 시간</span>
-            <span className="result-box__value">{fmtN(custDayProd, '대', 0)}</span>
-          </div>
-          <div className="result-box tone-slate">
-            <span className="result-box__label">고객 야간 생산량 = UPH × 시간</span>
-            <span className="result-box__value">{fmtN(custNightProd, '대', 0)}</span>
-          </div>
-          <div className="result-box tone-dark full-width" style={{ background: '#B45309' }}>
-            <span className="result-box__label">고객 일일 생산 수량</span>
-            <span className="result-box__value">{fmtN(custDailyProd, '대', 0)}</span>
-          </div>
         </div>
 
         <div style={{ height: 1, background: 'var(--color-card-border)', margin: '14px 0' }} />
@@ -154,23 +142,19 @@ export default function InventoryStorage({ data, updateData }) {
             <input className="input-field" type="number" step="0.1" min={0} value={f.selfNightTime || ''}
               onChange={e => set('selfNightTime', e.target.value)} placeholder="예: 4" />
           </div>
-          <div className="result-box tone-slate">
-            <span className="result-box__label">자사 주간 생산량 = UPH × 시간</span>
-            <span className="result-box__value">{fmtN(selfDayProd, '대', 0)}</span>
-          </div>
-          <div className="result-box tone-slate">
-            <span className="result-box__label">자사 야간 생산량 = UPH × 시간</span>
-            <span className="result-box__value">{fmtN(selfNightProd, '대', 0)}</span>
-          </div>
-          <div className="result-box tone-dark full-width" style={{ background: '#047857' }}>
-            <span className="result-box__label">자사 일일 생산 수량</span>
-            <span className="result-box__value">{fmtN(selfDailyProd, '대', 0)}</span>
-          </div>
         </div>
 
         <Divider label="기초 재고 산출" />
         <div className="input-grid">
-          <div className="result-box full-width" style={{ background: shortageQty < 0 ? '#047857' : '#A50034', padding: '14px 16px' }}>
+          <div className="result-box tone-slate">
+            <span className="result-box__label">고객 일일 생산 수량</span>
+            <span className="result-box__value">{fmtN(custDailyProd, '대', 0)}</span>
+          </div>
+          <div className="result-box tone-slate">
+            <span className="result-box__label">자사 일일 생산 수량</span>
+            <span className="result-box__value">{fmtN(selfDailyProd, '대', 0)}</span>
+          </div>
+          <div className="result-box full-width tone-final" style={{ padding: '14px 16px' }}>
             <span className="result-box__label" style={{ fontSize: '0.85rem' }}>
               일일 부족/잉여 차이 = 고객 일일 − 자사 일일 ({fmtSigned(shortageQty)})
             </span>
@@ -213,7 +197,7 @@ export default function InventoryStorage({ data, updateData }) {
         ))}
         <Divider label="합계" />
         <div className="input-grid">
-          <div className="result-box full-width" style={{ background: '#047857', padding: '14px 16px' }}>
+          <div className="result-box full-width tone-final" style={{ padding: '14px 16px' }}>
             <span className="result-box__label">리드타임 재고 = 숙성 + 안심 + 상차 + 이동</span>
             <span className="result-box__value" style={{ fontSize: '1.4rem' }}>{fmtN(leadTimeStock, '대', 0)}</span>
           </div>
@@ -251,20 +235,20 @@ export default function InventoryStorage({ data, updateData }) {
         ))}
         <Divider label="합계" />
         <div className="input-grid">
-          <div className="result-box full-width" style={{ background: '#047857', padding: '14px 16px' }}>
+          <div className="result-box full-width tone-final" style={{ padding: '14px 16px' }}>
             <span className="result-box__label">고객사 운영 재고 = 하차 + 대기 + 안전 재고</span>
             <span className="result-box__value" style={{ fontSize: '1.4rem' }}>{fmtN(customerOpsStock, '대', 0)}</span>
           </div>
         </div>
       </div>
 
-      {/* ── 4. 최종 적정 재고 ── */}
+      {/* ── 4. Total 적정 재고 ── */}
       <div className="section-card">
         <div className="section-title">
-          최종 적정 재고
-          <HelpHint title="최종 적정 재고">
+          Total 적정 재고
+          <HelpHint title="Total 적정 재고">
             <p>위 3가지 결과를 모두 합한 <b>최종 권장 보관 수량</b>입니다.</p>
-            <HintFormula>{`Total 최종 적정 재고
+            <HintFormula>{`Total 적정 재고
   = ① 일일 부족/잉여 절대값
   + ② 리드타임 재고
   + ③ 고객사 운영 재고`}</HintFormula>
@@ -281,20 +265,20 @@ export default function InventoryStorage({ data, updateData }) {
             <span className="result-box__label">② 리드타임 재고</span>
             <span className="result-box__value">{fmtN(leadTimeStock, '대', 0)}</span>
           </div>
-          <div className="result-box tone-blue full-width">
+          <div className="result-box tone-blue">
             <span className="result-box__label">③ 고객사 운영 재고</span>
             <span className="result-box__value">{fmtN(customerOpsStock, '대', 0)}</span>
           </div>
-          <div className="result-box full-width" style={{ background: '#A50034', padding: '18px 16px' }}>
+          <div className="result-box full-width tone-final" style={{ padding: '18px 16px' }}>
             <span className="result-box__label" style={{ fontSize: '0.85rem' }}>
-              ⭐ Total 최종 적정 재고 = ① 절대값 + ② + ③
+              ⭐ Total 적정 재고 = ① 절대값 + ② + ③
             </span>
             <span className="result-box__value" style={{ fontSize: '1.7rem' }}>{fmtN(finalStock, '대', 0)}</span>
           </div>
         </div>
 
         <div style={{ marginTop: 12, padding: 12, background: '#f8fafc', borderRadius: 8, fontSize: '0.78rem', color: '#4A4045', lineHeight: 1.7 }}>
-          <div><strong>① Total 최종 적재 재고</strong> = 일일 부족/잉여 절대값 + 리드타임 재고 + 고객사 운영 재고</div>
+          <div><strong>① Total 적정 재고</strong> = 일일 부족/잉여 절대값 + 리드타임 재고 + 고객사 운영 재고</div>
           <div><strong>② 안심 재고</strong> : 운반 사고, 설비 고장 빈도수, 차량 수배 등등</div>
           <div><strong>③ 대기 시간</strong> : 고객사 조립 라인 투입 전 보관 수량</div>
           <div><strong>④ 고객 안전 재고</strong> : 7대 로스 감안 재고</div>
@@ -306,7 +290,7 @@ export default function InventoryStorage({ data, updateData }) {
         <div className="section-title">
           적정 Space 산출
           <HelpHint title="적정 Space 산출">
-            <p>최종 적정 재고를 <b>실제 창고 바닥 면적</b>으로 환산합니다.</p>
+            <p>Total 적정 재고를 <b>실제 창고 바닥 면적</b>으로 환산합니다.</p>
             <HintFormula>{`1단 면적     = 가로 × 세로                      [m²]
 필요 바닥 면적 = 1단 면적 × 적정 재고 ÷ 높이(단)  [m²]
 최종 적정 면적 = 필요 바닥 면적 × 여유율          [m²]`}</HintFormula>
@@ -335,7 +319,7 @@ export default function InventoryStorage({ data, updateData }) {
               onChange={e => set('spaceHeight', e.target.value)} placeholder="예: 3" />
           </div>
           <div className="input-group">
-            <div className="input-label-row"><span className="input-label">여유율 (계수)</span></div>
+            <div className="input-label-row"><span className="input-label">여유율 (가중치)</span></div>
             <input className="input-field" type="number" step="0.1" min={1} value={f.spaceMargin || ''}
               onChange={e => set('spaceMargin', e.target.value)} placeholder="예: 1.2" />
           </div>
@@ -343,13 +327,9 @@ export default function InventoryStorage({ data, updateData }) {
             <span className="result-box__label">1단 면적 (가로 × 세로)</span>
             <span className="result-box__value">{unitArea > 0 ? `${unitArea.toFixed(2)} m²` : '—'}</span>
           </div>
-          <div className="result-box tone-slate full-width">
-            <span className="result-box__label">필요 바닥 면적 (1단 × {fmtN(finalStock, '대', 0)} ÷ {spaceHeight}단)</span>
-            <span className="result-box__value">{baseArea > 0 ? `${baseArea.toFixed(2)} m²` : '—'}</span>
-          </div>
-          <div className="result-box full-width" style={{ background: '#A50034', padding: '18px 16px' }}>
+          <div className="result-box full-width tone-final" style={{ padding: '18px 16px' }}>
             <span className="result-box__label" style={{ fontSize: '0.85rem' }}>
-              ⭐ 최종 적정 면적 = (가로 × 세로 × 적정 재고) ÷ 높이 × 여유율
+              ⭐ 물류 적정 면적 = (가로 × 세로 × 적정 재고) ÷ 높이 × 여유율
             </span>
             <span className="result-box__value" style={{ fontSize: '1.7rem' }}>
               {finalArea > 0 ? `${finalArea.toLocaleString(undefined, { maximumFractionDigits: 1 })} m²` : '—'}

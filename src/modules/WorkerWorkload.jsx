@@ -417,7 +417,7 @@ export default function WorkerWorkload({
           </HelpHint>
         </div>
         <div className="input-grid">
-          <div className="result-box">
+          <div className="result-box tone-final">
             <span className="result-box__label">총 운반 시간 (피킹+이동+로딩/언로딩+회수)</span>
             <span className="result-box__value">{totalTransportSec.toFixed(1)}초</span>
           </div>
@@ -429,7 +429,7 @@ export default function WorkerWorkload({
             <span className="result-box__label">부하 가중 시간 = 3600 × {weight}</span>
             <span className="result-box__value">{weightedTime.toFixed(0)} 초</span>
           </div>
-          <div className="result-box" style={{ background: workloadRate > 90 ? '#92400E' : workloadRate > 70 ? '#B45309' : '#047857' }}>
+          <div className="result-box tone-final">
             <span className="result-box__label">물류 부하율</span>
             <span className="result-box__value">{workloadRate.toFixed(1)}%</span>
           </div>

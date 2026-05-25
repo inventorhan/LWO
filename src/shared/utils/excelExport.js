@@ -145,6 +145,7 @@ export async function exportToExcel(state) {
     ws2.addRows([
       ['E/V 가로(m)', eb.evWidth],
       ['E/V 세로(m)', eb.evDepth],
+      ['적재 단수', eb.stackLevel ?? 4],
       ['E/V 부하 가중치', eb.weight]
     ])
 
@@ -171,9 +172,10 @@ export async function exportToExcel(state) {
     const evRate = (evTotal / (3600 * evWeight)) * 100
     /* 적재율 */
     const evArea = (parseFloat(eb.evWidth) || 0) * (parseFloat(eb.evDepth) || 0)  // m²
+    const evStackLevel = parseFloat(eb.stackLevel) || 4
     const usedArea = (h.loadItems || []).reduce((acc, it) =>
-      acc + (parseFloat(it.width) || 0) * (parseFloat(it.depth) || 0) * (parseInt(it.qty) || 0), 0)  // m²
-    const loadingRate = evArea > 0 ? (usedArea / evArea) * 0.9 * 100 : 0
+      acc + ((parseFloat(it.width) || 0) * (parseFloat(it.depth) || 0) * (parseInt(it.qty) || 0)) / evStackLevel, 0)  // m²
+    const loadingRate = evArea > 0 ? (usedArea / evArea) * 100 : 0
 
     ws2.addRow([])
     applySubHeader(ws2.addRow([`${hogiKey}호기 — 결과`]))
@@ -224,7 +226,7 @@ export async function exportToExcel(state) {
     applySubHeader(ws3.addRow([`${i + 1}구역 (단위: m)`]))
     const zA = calcArea(z.width, z.height)
     ws3.addRow(['구역', z.width, z.height, '', zA ? zA.toFixed(1) : ''])
-    ws3.addRow(['적재종류', '개수', '가로(m)', '세로(m)', '최저높이(m)', '최고높이(m)', '체적가중치']).eachCell(c => c.style = labelStyle)
+    ws3.addRow(['적재종류', '개수', '가로(m)', '세로(m)', '최저높이(m)', '최고높이(m)', '최고 높이 점유율']).eachCell(c => c.style = labelStyle)
     let usedArea = 0
     ;(z.items || []).forEach(item => {
       const ia = calcArea(item.width, item.depth)
@@ -240,7 +242,8 @@ export async function exportToExcel(state) {
   const photoStart = ws3.lastRow.number + 2
   let imgRow = photoStart
   const allAreaPhotos = []
-  if (ar.factory?.photo) allAreaPhotos.push({ b64: ar.factory.photo, label: '공장' })
+  const factoryPhotos = Array.isArray(ar.factory?.photos) ? ar.factory.photos : (ar.factory?.photo ? [ar.factory.photo] : [])
+  factoryPhotos.forEach((photo, idx) => allAreaPhotos.push({ b64: photo, label: `공장${idx + 1}` }))
   ;(ar.zones || []).forEach((z, i) => {
     if (z.photo) allAreaPhotos.push({ b64: z.photo, label: `${i + 1}구역` })
     ;(z.items || []).forEach((it, j) => {
@@ -334,13 +337,13 @@ export async function exportToExcel(state) {
     ['고객사 운영 재고(대) = 하차+대기+안전', opsStock.toFixed(0)]
   ])
   ws4.addRow([])
-  applySubHeader(ws4.addRow(['최종 적정 재고']))
+  applySubHeader(ws4.addRow(['Total 적정 재고']))
   const finalStock = shortageQty + leadTimeStock + opsStock
   ws4.addRows([
     ['① 일일 부족/잉여 절대값(대)', shortageQty.toFixed(0)],
     ['② 리드타임 재고(대)', leadTimeStock.toFixed(0)],
     ['③ 고객사 운영 재고(대)', opsStock.toFixed(0)],
-    ['⭐ Total 최종 적정 재고(대) = ① 절대값+②+③', finalStock.toFixed(0)]
+    ['⭐ Total 적정 재고(대) = ① 절대값+②+③', finalStock.toFixed(0)]
   ])
 
   /* ─── 5. AMR 산출 ─── */
@@ -358,8 +361,12 @@ export async function exportToExcel(state) {
   const lSec = n(am.loadCount) * n(am.loadTime)
   const uSec = n(am.unloadCount) * n(am.unloadTime)
   const trip = n(am.amrtSpeed) > 0 ? (round / n(am.amrtSpeed)) + lSec + uSec : 0
-  const base = cycle > 0 ? Math.round(trip / cycle) : 0
-  const need = (n(am.operationRate) || 0.8) > 0 ? Math.round(base / (n(am.operationRate) || 0.8)) + n(am.spare) : 0
+  const baseRaw = cycle > 0 ? trip / cycle : 0
+  const base = baseRaw > 0 ? Math.ceil(baseRaw) : 0
+  const margin = n(am.operationRate) || 1.2
+  const adjustedRaw = baseRaw * margin
+  const adjusted = adjustedRaw > 0 ? Math.ceil(adjustedRaw) : 0
+  const need = adjusted + n(am.spare)
 
   applySubHeader(ws5.addRow(['생산 정보']))
   ws5.addRows([
@@ -388,9 +395,10 @@ export async function exportToExcel(state) {
   ws5.addRow([])
   applySubHeader(ws5.addRow(['필요 대수']))
   ws5.addRows([
-    ['가동율', am.operationRate],
+    ['AMR 여유율', margin],
     ['Spare(대)', am.spare],
-    ['AMR 원단위(대)', base],
+    ['AMR 원단위(대)', `${baseRaw.toFixed(2)} → ${base}`],
+    ['여유율 적용 AMR 수량(대)', `${adjustedRaw.toFixed(2)} → ${adjusted}`],
     ['⭐ AMR 필요 대수(대)', need]
   ])
 
@@ -497,37 +505,38 @@ export async function exportToExcel(state) {
   ]
   styleHeaderRow(ws7.getRow(1))
   const lp = state.logisticsPersonnel || {}
-  const lpPick = n(lp.pickTime)
-  const lpLoad = n(lp.loadTime)
-  const lpDistance = n(lp.distance)
-  const lpSpeed = n(lp.speed)
-  const lpHours = n(lp.hoursPerDay) || 8
-  const lpTripsPerHour = n(lp.tripsPerHour)
-  const lpHasMarginRate = lp.availability !== undefined && lp.availability !== null && lp.availability !== ''
-  const lpRawMarginRate = n(lp.availability)
-  const lpMarginRate = lpHasMarginRate ? lpRawMarginRate : 0
-  const lpMove = lpSpeed > 0 ? lpDistance / lpSpeed : 0
-  const lpTransport = lpPick + lpLoad + lpMove
-  const lpDailyTrips = lpTripsPerHour * lpHours
-  const lpDailyTime = lpTransport * lpDailyTrips
-  const lpDailyWorkSeconds = lpHours * 3600
-  const lpBase = lpDailyWorkSeconds > 0 ? lpDailyTime / lpDailyWorkSeconds : 0
-  ws7.addRows([
-    ['피킹 시간(sec)', lp.pickTime],
-    ['로딩/언로딩 시간(sec)', lp.loadTime],
-    ['왕복 이동 거리(m)', lp.distance],
-    ['이동 속도(m/sec)', lp.speed],
-    ['이동 시간(sec)', lpMove.toFixed(1)],
-    ['물류 운반 시간(sec)', lpTransport.toFixed(1)],
-    ['시간당 운반 횟수', lp.tripsPerHour],
-    ['일 작업 시간(h)', lpHours],
-    ['일 운반 횟수', lpDailyTrips.toFixed(0)],
-    ['총 물류 운반 시간(sec)', lpDailyTime.toFixed(0)],
-    ['일 물류 가동 시간(sec)', lpDailyWorkSeconds.toFixed(0)],
-    ['물류 운반 인원(명)', lpBase.toFixed(1)],
-    ['여유율(%)', lpMarginRate.toFixed(0)],
-    ['최종 물류 적정 인원(명)', (lpBase * (lpMarginRate / 100)).toFixed(1)]
-  ])
+  const lpItems = lp.items?.length ? lp.items : [{
+    itemName: 'Item-1',
+    loadType: '',
+    pickTime: lp.pickTime,
+    unloadTime: lp.loadTime,
+    distance: lp.distance,
+    speed: lp.speed,
+    tripsPerHour: lp.tripsPerHour,
+    hoursPerDay: lp.hoursPerDay || 8,
+    allowance: lp.allowance || 0.8
+  }]
+  let lpTotal = 0
+  ws7.addRow(['적재 Item', '적재 종류', '1회 운반 시간(초)', '일 운반 시간(초)', '표준 운반 작업 시간(초)', '물류 적정 인원(명)']).eachCell(c => c.style = labelStyle)
+  lpItems.forEach(item => {
+    const move = n(item.speed) > 0 ? n(item.distance) / n(item.speed) : 0
+    const transport = n(item.pickTime) + n(item.unloadTime) + move
+    const dailyTrips = n(item.tripsPerHour) * (n(item.hoursPerDay) || 8)
+    const dailyTime = transport * dailyTrips
+    const standardTime = (n(item.hoursPerDay) || 8) * 3600 * (n(item.allowance) || 0.8)
+    const personnel = standardTime > 0 ? dailyTime / standardTime : 0
+    lpTotal += personnel
+    ws7.addRow([
+      item.itemName,
+      item.loadType,
+      transport.toFixed(1),
+      dailyTime.toFixed(0),
+      standardTime.toFixed(0),
+      personnel.toFixed(2)
+    ])
+  })
+  ws7.addRow([])
+  ws7.addRow(['전체 물류 적정 인원(명)', lpTotal.toFixed(2)])
 
   /* ─── 8. 물류 창고 면적 ─── */
   const ws8 = workbook.addWorksheet('8.물류창고면적')
@@ -552,30 +561,64 @@ export async function exportToExcel(state) {
     { header: '창고 면적(평)', key: 'warehousePyeong', width: 16 }
   ]
   styleHeaderRow(ws8.getRow(1))
-  const whItems = state.warehouseArea?.items || []
-  let whDailyPallets = 0, whDailyArea = 0, whM2 = 0, whPyeong = 0
-  whItems.forEach(item => {
-    const occupiedArea = n(item.length) * n(item.width)
-    const totalLoadQty = n(item.loadQty) * (n(item.stackLevel) || 1)
-    const dailyPallets = totalLoadQty > 0 ? n(item.dailyQty) / totalLoadQty : 0
-    const dailyArea = occupiedArea * dailyPallets
-    const warehouseM2 = dailyArea * n(item.dio) * (n(item.margin) || 1)
-    const warehousePyeong = warehouseM2 / 3.3
-    whDailyPallets += dailyPallets
-    whDailyArea += dailyArea
-    whM2 += warehouseM2
-    whPyeong += warehousePyeong
-    ws8.addRow([
-      item.category, item.cmdt, item.warehouseType, n(item.dailyQty), item.container,
-      n(item.length), n(item.width), n(item.height), occupiedArea.toFixed(2),
-      n(item.loadQty), n(item.stackLevel) || 1, totalLoadQty.toFixed(0),
-      dailyPallets.toFixed(0), dailyArea.toFixed(1), n(item.dio), n(item.margin) || 1,
-      warehouseM2.toFixed(0), warehousePyeong.toFixed(0)
-    ])
-  })
-  ws8.addRow([])
-  applySubHeader(ws8.addRow(['Sub Total']))
-  ws8.addRow(['', '', '', '', '', '', '', '', '', '', '', '', whDailyPallets.toFixed(0), whDailyArea.toFixed(0), '', '', whM2.toFixed(0), whPyeong.toFixed(0)])
+  const wh = state.warehouseArea || {}
+  const uphItems = wh.uphItems || []
+  const containerItems = wh.containerItems || []
+  let whM2 = 0
+  if (uphItems.length || containerItems.length) {
+    if (uphItems.length) {
+      applySubHeader(ws8.addRow(['UPH 기준']))
+      ws8.addRow(['적재 Item', '적재 종류', 'UPH', '작업 시간', '수용수', '가로', '세로', '높이(단)', '여유율', '최종 적정 면적']).eachCell(c => c.style = labelStyle)
+      uphItems.forEach(item => {
+        const dailyQty = n(item.uph) * n(item.hours)
+        const dailyLoadQty = n(item.capacity) > 0 ? dailyQty / n(item.capacity) : 0
+        const unitArea = n(item.length) * n(item.width)
+        const finalArea = (dailyLoadQty * unitArea / (n(item.stackLevel) || 1)) * (n(item.margin) || 1)
+        whM2 += finalArea
+        ws8.addRow([item.itemName, item.warehouseType, n(item.uph), n(item.hours), n(item.capacity), n(item.length), n(item.width), n(item.stackLevel) || 1, n(item.margin) || 1, finalArea.toFixed(1)])
+      })
+    }
+    if (containerItems.length) {
+      ws8.addRow([])
+      applySubHeader(ws8.addRow(['용기 사이즈 기준']))
+      ws8.addRow(['적재 Item', '적재 종류', 'UPH', '일 생산수량', '가로 개수', '세로 개수', '높이(단)', '가로 길이', '세로 길이', '여유율', '필요 면적']).eachCell(c => c.style = labelStyle)
+      containerItems.forEach(item => {
+        const floorQty = n(item.countX) * n(item.countY)
+        const unitArea = n(item.length) * n(item.width)
+        const finalArea = floorQty * unitArea * (n(item.margin) || 1)
+        whM2 += finalArea
+        ws8.addRow([item.itemName, item.warehouseType, n(item.uph), n(item.dailyQty), n(item.countX), n(item.countY), n(item.stackLevel) || 1, n(item.length), n(item.width), n(item.margin) || 1, finalArea.toFixed(1)])
+      })
+    }
+    ws8.addRow([])
+    applySubHeader(ws8.addRow(['Sub Total']))
+    ws8.addRow(['물류 필요 면적 합계(m²)', whM2.toFixed(1)])
+  } else {
+    const whItems = wh.items || []
+    let whDailyPallets = 0, whDailyArea = 0, whPyeong = 0
+    whItems.forEach(item => {
+      const occupiedArea = n(item.length) * n(item.width)
+      const totalLoadQty = n(item.loadQty) * (n(item.stackLevel) || 1)
+      const dailyPallets = totalLoadQty > 0 ? n(item.dailyQty) / totalLoadQty : 0
+      const dailyArea = occupiedArea * dailyPallets
+      const warehouseM2 = dailyArea * n(item.dio) * (n(item.margin) || 1)
+      const warehousePyeong = warehouseM2 / 3.3
+      whDailyPallets += dailyPallets
+      whDailyArea += dailyArea
+      whM2 += warehouseM2
+      whPyeong += warehousePyeong
+      ws8.addRow([
+        item.category, item.cmdt, item.warehouseType, n(item.dailyQty), item.container,
+        n(item.length), n(item.width), n(item.height), occupiedArea.toFixed(2),
+        n(item.loadQty), n(item.stackLevel) || 1, totalLoadQty.toFixed(0),
+        dailyPallets.toFixed(0), dailyArea.toFixed(1), n(item.dio), n(item.margin) || 1,
+        warehouseM2.toFixed(0), warehousePyeong.toFixed(0)
+      ])
+    })
+    ws8.addRow([])
+    applySubHeader(ws8.addRow(['Sub Total']))
+    ws8.addRow(['', '', '', '', '', '', '', '', '', '', '', '', whDailyPallets.toFixed(0), whDailyArea.toFixed(0), '', '', whM2.toFixed(0), whPyeong.toFixed(0)])
+  }
 
   /* ─── 9. 물류 자동화율 ─── */
   const ws9 = workbook.addWorksheet('9.물류자동화율')

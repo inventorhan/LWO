@@ -1,5 +1,7 @@
 import { useMemo, useCallback, useState, useEffect } from 'react'
+import ExcelJS from 'exceljs'
 import { n, fmtN } from '../shared/utils/common'
+import { saveBlob } from '../shared/utils/saveAndShare'
 import HelpHint, { HintFormula, HintNote } from '../shared/components/HelpHint'
 import normalCurveImg from '../assets/normal_distribution.png'
 
@@ -10,6 +12,85 @@ const stdev = (arr) => {
   const m = avg(arr)
   const s = arr.reduce((a, v) => a + (v - m) ** 2, 0) / (arr.length - 1)
   return Math.sqrt(s)
+}
+
+const excelCellText = (value) => {
+  if (value == null) return ''
+  if (value instanceof Date) return value.toISOString().slice(0, 10)
+  if (typeof value === 'object') {
+    if (value.text) return value.text
+    if (value.result != null) return String(value.result)
+    if (value.richText) return value.richText.map(t => t.text).join('')
+  }
+  return String(value)
+}
+
+const excelDateText = (value) => {
+  if (value instanceof Date) return value.toISOString().slice(0, 10)
+  const text = excelCellText(value).replace(/^"|"$/g, '').trim()
+  if (!text) return ''
+  const date = new Date(text)
+  if (!Number.isNaN(date.getTime())) return date.toISOString().slice(0, 10)
+  return text.slice(0, 10)
+}
+
+async function downloadStatsTemplate() {
+  const workbook = new ExcelJS.Workbook()
+  const ws = workbook.addWorksheet('Data')
+  ws.getRow(4).values = ['', '순서', '일자', '생산량', '출하량', '재고량']
+  ws.getRow(4).font = { bold: true }
+  ws.addRow(['', 1, '2026-04-01', 1111, 2222, 3333])
+  ws.addRow(['', 2, '2026-04-02', 1111, 2222, 3333])
+  ws.addRow(['', 3, '2026-04-03', 1111, 2222, 3333])
+  ws.columns = [
+    { width: 4 }, { width: 10 }, { width: 16 },
+    { width: 14 }, { width: 14 }, { width: 14 }
+  ]
+  const buffer = await workbook.xlsx.writeBuffer()
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+  return saveBlob('실적 기준 작성 재고_양식.xlsx', blob, {
+    mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    title: '실적 기준 작성 재고 양식'
+  })
+}
+
+async function readStatsWorkbook(file) {
+  const workbook = new ExcelJS.Workbook()
+  await workbook.xlsx.load(await file.arrayBuffer())
+  const ws = workbook.worksheets[0]
+  if (!ws) return []
+
+  let headerRowNo = 0
+  const colMap = {}
+  ws.eachRow((row, rowNo) => {
+    if (headerRowNo) return
+    row.eachCell((cell, colNo) => {
+      const text = excelCellText(cell.value).replace(/\s+/g, '')
+      if (text === '일자') colMap.date = colNo
+      if (text === '생산량') colMap.production = colNo
+      if (text === '출하량') colMap.shipment = colNo
+      if (text === '재고량') colMap.stock = colNo
+    })
+    if (colMap.date && colMap.production && colMap.shipment && colMap.stock) headerRowNo = rowNo
+  })
+  if (!headerRowNo) return []
+
+  const rows = []
+  for (let r = headerRowNo + 1; r <= ws.rowCount; r++) {
+    const row = ws.getRow(r)
+    const record = {
+      date: excelDateText(row.getCell(colMap.date).value),
+      production: excelCellText(row.getCell(colMap.production).value).trim(),
+      shipment: excelCellText(row.getCell(colMap.shipment).value).trim(),
+      stock: excelCellText(row.getCell(colMap.stock).value).trim()
+    }
+    if ([record.date, record.production, record.shipment, record.stock].every(v => !v)) continue
+    rows.push({
+      id: `inv-${Date.now()}-${r}-${Math.random().toString(36).slice(2, 6)}`,
+      ...record
+    })
+  }
+  return rows
 }
 
 /* 정규분포 + Z표 이미지 */
@@ -25,10 +106,6 @@ function ManagerModal({ open, onClose, title, items, onAdd, onRemove, onRename, 
   const [newName, setNewName] = useState('')
   const [editId, setEditId] = useState(null)
   const [editValue, setEditValue] = useState('')
-
-  useEffect(() => {
-    if (!open) { setNewName(''); setEditId(null); setEditValue('') }
-  }, [open])
 
   useEffect(() => {
     if (!open) return
@@ -209,7 +286,6 @@ export default function InventoryStatistics({
   const [modelMgrOpen, setModelMgrOpen] = useState(false)
 
   /* 통계 산출 */
-  const prodArr = records.map(r => n(r.production)).filter(v => v > 0)
   const shipArr = records.map(r => n(r.shipment)).filter(v => v > 0)
   const stockArr = records.map(r => n(r.stock)).filter(v => v > 0)
 
@@ -226,12 +302,35 @@ export default function InventoryStatistics({
   const stock995 = stats.shipAvg + stats.shipStd * 2.575
   const days999 = stats.shipAvg > 0 ? stock999 / stats.shipAvg : 0
   const days995 = stats.shipAvg > 0 ? stock995 / stats.shipAvg : 0
+  const compareText = stats.stockMax === 0 ? '—'
+    : stats.stockMax > stock999 ? '과잉'
+      : stats.stockMax >= stock995 ? '적절'
+        : '부족'
 
   const handleAdd = useCallback(() => addRecord(), [addRecord])
   const handleUpdate = useCallback((id, field, value) => updateRecord(id, { [field]: value }), [updateRecord])
   const handleRemove = useCallback((id) => {
     if (window.confirm('이 일자 데이터를 삭제하시겠습니까?')) removeRecord(id)
   }, [removeRecord])
+  const handleImport = useCallback(async (file) => {
+    if (!file || !activeProduct || !activeModel) return
+    try {
+      const imported = await readStatsWorkbook(file)
+      if (imported.length === 0) {
+        window.alert('엑셀에서 일자/생산량/출하량/재고량 컬럼을 찾지 못했습니다.')
+        return
+      }
+      updateData({
+        dataByKey: {
+          ...(f.dataByKey || {}),
+          [currentKey]: { records: imported }
+        }
+      })
+    } catch (err) {
+      console.error(err)
+      window.alert('엑셀 파일을 읽는 중 오류가 발생했습니다.')
+    }
+  }, [activeProduct, activeModel, currentKey, f.dataByKey, updateData])
 
   return (
     <div style={{ animation: 'fadeIn 0.3s ease' }}>
@@ -328,11 +427,23 @@ export default function InventoryStatistics({
               <HintNote type="warn">빈 값은 통계에서 자동 제외됩니다.</HintNote>
             </HelpHint>
           </div>
-          <button className="btn" onClick={handleAdd}
-            disabled={!activeProduct || !activeModel}
-            style={{ height: 34, padding: '0 14px', background: '#FDF2F4', color: '#A50034', border: '1px solid #E8C5CC', fontSize: '0.82rem', opacity: (activeProduct && activeModel) ? 1 : 0.5, cursor: (activeProduct && activeModel) ? 'pointer' : 'not-allowed' }}>
-            + 일자 추가
-          </button>
+          <div className="action-row">
+            <label className="btn btn-soft"
+              style={{ height: 34, padding: '0 14px', fontSize: '0.82rem', opacity: (activeProduct && activeModel) ? 1 : 0.5, cursor: (activeProduct && activeModel) ? 'pointer' : 'not-allowed' }}>
+              엑셀 일괄 입력
+              <input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                disabled={!activeProduct || !activeModel}
+                style={{ display: 'none' }}
+                onChange={e => { if (e.target.files?.[0]) handleImport(e.target.files[0]); e.target.value = '' }} />
+            </label>
+            <button className="btn btn-soft" onClick={downloadStatsTemplate}
+              style={{ height: 34, padding: '0 14px', fontSize: '0.82rem' }}>엑셀 다운로드</button>
+            <button className="btn" onClick={handleAdd}
+              disabled={!activeProduct || !activeModel}
+              style={{ height: 34, padding: '0 14px', background: '#FDF2F4', color: '#A50034', border: '1px solid #E8C5CC', fontSize: '0.82rem', opacity: (activeProduct && activeModel) ? 1 : 0.5, cursor: (activeProduct && activeModel) ? 'pointer' : 'not-allowed' }}>
+              + 일자 추가
+            </button>
+          </div>
         </div>
 
         {(!activeProduct || !activeModel) && (
@@ -441,14 +552,14 @@ export default function InventoryStatistics({
           <div className="result-box tone-slate"><span className="result-box__label">Min</span><span className="result-box__value">{fmtN(stats.shipMin, '대', 0)}</span></div>
           <div className="result-box tone-slate"><span className="result-box__label">Max</span><span className="result-box__value">{fmtN(stats.shipMax, '대', 0)}</span></div>
 
-          <div className="result-box full-width" style={{ background: '#A50034', padding: '14px 16px' }}>
+          <div className="result-box full-width tone-final" style={{ padding: '14px 16px' }}>
             <span className="result-box__label" style={{ fontSize: '0.85rem' }}>⭐ 99.9% 적정 재고 = 평균 + 표편 × 3.09</span>
             <span className="result-box__value" style={{ fontSize: '1.4rem' }}>
               {fmtN(stock999, '대', 0)}
               <span style={{ fontSize: '0.85rem', fontWeight: 600, marginLeft: 12, opacity: 0.85 }}>· 재고 일수 {days999.toFixed(1)}일</span>
             </span>
           </div>
-          <div className="result-box full-width" style={{ background: '#6F0023', padding: '14px 16px' }}>
+          <div className="result-box full-width tone-final" style={{ padding: '14px 16px' }}>
             <span className="result-box__label" style={{ fontSize: '0.85rem' }}>⭐ 99.5% 적정 재고 = 평균 + 표편 × 2.575</span>
             <span className="result-box__value" style={{ fontSize: '1.4rem' }}>
               {fmtN(stock995, '대', 0)}
@@ -457,9 +568,20 @@ export default function InventoryStatistics({
           </div>
         </div>
 
+        <div className="input-grid" style={{ marginTop: 12 }}>
+          <div className="result-box tone-final">
+            <span className="result-box__label">비교 분석</span>
+            <span className="result-box__value">{compareText}</span>
+          </div>
+          <div className="result-box tone-slate full-width">
+            <span className="result-box__label">실적 Max 재고 - 99.9% 적정 재고 비교</span>
+            <span className="result-box__value">{stats.stockMax ? `${Math.round(stats.stockMax - stock999).toLocaleString()}대` : '—'}</span>
+          </div>
+        </div>
+
         <div style={{ marginTop: 12, padding: 12, background: '#FAEFF2', borderRadius: 8, fontSize: '0.78rem', color: '#4A4045', lineHeight: 1.7 }}>
           <div><strong>① 평균 소요량</strong> : 일평균 출하량 (조달기간 동안 필요한 수량의 통계적 기댓값)</div>
-          <div><strong>② 안전계수 Z</strong> : 회사 서비스 수준에 따라 결정 (보통 95% Z=1.65, 99% Z=2.33)</div>
+          <div><strong>② 안전계수 Z</strong> : 회사 서비스 수준에 따라 결정 (99.5% Z=2.575, 99.9% Z=3.09)</div>
           <div><strong>③ 소요량 편차</strong> : 출하량의 표준편차 — 들쭉날쭉한 정도를 나타냄</div>
         </div>
       </div>

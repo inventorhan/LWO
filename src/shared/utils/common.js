@@ -79,7 +79,7 @@ export const fileToBase64 = (file) => new Promise((resolve, reject) => {
         reject(err);
       }
     };
-    img.onerror = (e) => {
+    img.onerror = () => {
       URL.revokeObjectURL(url);
       // 이미지 로딩 실패 시 원본 base64로 fallback
       const reader = new FileReader();

@@ -92,7 +92,7 @@ export default function AutomationRate({ data, updateData }) {
             <input className="input-field" type="number" min={0} value={f.automatedItems || ''}
               onChange={e => set('automatedItems', e.target.value)} placeholder="예: 100" />
           </div>
-          <div className="result-box full-width" style={{ background: '#A50034' }}>
+          <div className="result-box full-width tone-final">
             <span className="result-box__label">자동화율 = 자동화 적용 Item 수 ÷ 총 입고 Item 수</span>
             <span className="result-box__value">{fmtN(automationRate, '%', 1)}</span>
           </div>
@@ -119,7 +119,7 @@ export default function AutomationRate({ data, updateData }) {
             <input className="input-field" type="number" min={0} value={f.rehandlingItems || ''}
               onChange={e => set('rehandlingItems', e.target.value)} placeholder="예: 100" />
           </div>
-          <div className="result-box full-width" style={{ background: '#A50034' }}>
+          <div className="result-box full-width tone-final">
             <span className="result-box__label">Re-Handling율 = Re-Handling Item 수 ÷ 총 입고 Item 수</span>
             <span className="result-box__value">{fmtN(rehandlingRate, '%', 1)}</span>
           </div>

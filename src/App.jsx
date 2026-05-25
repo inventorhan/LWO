@@ -18,8 +18,7 @@ const TABS = [
   { id: 'worker',    label: '작업자 부하율', short: '작업자', icon: '👷' },
   { id: 'elevator',  label: 'E/V 부하율',    short: 'E/V',    icon: '🛗' },
   { id: 'area',      label: '면적 효율',     short: '면적',   icon: '📐' },
-  { id: 'inventory', label: '재고 보관량',   short: '재고',   icon: '📦' },
-  { id: 'invStats',  label: '실적 기준 재고', short: '실적', icon: '📈' },
+  { id: 'inventory', label: '적정 재고량',   short: '재고',   icon: '📦' },
   { id: 'amr',       label: 'AMR 대수',      short: 'AMR',    icon: '🤖' },
   { id: 'personnelPlan', label: '물류 적정 인원', short: '물류인원', icon: '👥' },
   { id: 'warehouseArea', label: '물류 창고 면적', short: '창고면적', icon: '🏭' },
@@ -45,6 +44,7 @@ export default function App() {
   } = useAppState()
 
   const [activeTab, setActiveTab] = useState('worker')
+  const [inventoryMode, setInventoryMode] = useState('uph')
   const [toast, setToast] = useState('')
   const [helpOpen, setHelpOpen] = useState(false)
   const toastTimer = useRef(null)
@@ -166,25 +166,35 @@ export default function App() {
       case 'area':
         return <AreaEfficiency data={state.area} updateData={updateArea} />
       case 'inventory':
-        return <InventoryStorage data={state.inventory} updateData={updateInventory} />
-      case 'invStats':
-        return <InventoryStatistics
-          key={`${state.inventoryStats.activeProduct}::${state.inventoryStats.activeModel}`}
-          data={state.inventoryStats}
-          updateData={updateInventoryStats}
-          addProduct={addInvProduct}
-          removeProduct={removeInvProduct}
-          renameProduct={renameInvProduct}
-          addModel={addInvModel}
-          removeModel={removeInvModel}
-          renameModel={renameInvModel}
-          setActiveProduct={setActiveInvProduct}
-          setActiveModel={setActiveInvModel}
-          addRecord={addInvStatsRecord}
-          updateRecord={updateInvStatsRecord}
-          removeRecord={removeInvStatsRecord}
-          clearRecords={clearInvStatsRecords}
-        />
+        return <>
+          <div className="section-card compact-mode-card">
+            <div className="segmented-control">
+              <button className={`segmented-btn ${inventoryMode === 'uph' ? 'active' : ''}`}
+                onClick={() => setInventoryMode('uph')}>UPH 기준 재고</button>
+              <button className={`segmented-btn ${inventoryMode === 'stats' ? 'active' : ''}`}
+                onClick={() => setInventoryMode('stats')}>실적 기준 재고</button>
+            </div>
+          </div>
+          {inventoryMode === 'uph'
+            ? <InventoryStorage data={state.inventory} updateData={updateInventory} />
+            : <InventoryStatistics
+                key={`${state.inventoryStats.activeProduct}::${state.inventoryStats.activeModel}`}
+                data={state.inventoryStats}
+                updateData={updateInventoryStats}
+                addProduct={addInvProduct}
+                removeProduct={removeInvProduct}
+                renameProduct={renameInvProduct}
+                addModel={addInvModel}
+                removeModel={removeInvModel}
+                renameModel={renameInvModel}
+                setActiveProduct={setActiveInvProduct}
+                setActiveModel={setActiveInvModel}
+                addRecord={addInvStatsRecord}
+                updateRecord={updateInvStatsRecord}
+                removeRecord={removeInvStatsRecord}
+                clearRecords={clearInvStatsRecords}
+              />}
+        </>
       case 'amr':
         return <AmrCalculation data={state.amr} updateData={updateAmr} />
       case 'personnelPlan':

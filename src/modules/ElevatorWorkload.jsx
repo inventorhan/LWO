@@ -34,7 +34,7 @@ export default function ElevatorWorkload({
   const activeHogi = data.activeHogi || 1
   const hogiKey = String(activeHogi)
   const cur = data.dataByHogi?.[hogiKey] || {
-    basicInfo: { weight: 0.8, evWidth: '', evDepth: '' },
+    basicInfo: { weight: 0.8, evWidth: '', evDepth: '', stackLevel: 4 },
     measurements: [],
     loadItems: [],
     photos: []
@@ -56,13 +56,13 @@ export default function ElevatorWorkload({
     setActiveCycleId(null)
   }, [addElevatorCycle])
 
-  const handleDeleteCycle = useCallback((id) => {
+  const handleDeleteCycle = (id) => {
     if (measurements.length <= 1) return
     if (window.confirm(`${activeIndex}회차의 모든 측정 데이터가 삭제됩니다. 계속하시겠습니까?`)) {
       removeElevatorCycle(id)
       setActiveCycleId(null)
     }
-  }, [measurements.length, activeIndex, removeElevatorCycle])
+  }
 
   /* ── 호기 목록 / 추가·삭제 ── */
   const hogiList = Object.keys(data.dataByHogi || { '1': null })
@@ -97,12 +97,13 @@ export default function ElevatorWorkload({
 
   /* ── E/V 면적·적재율 계산 (단위: m) ── */
   const evAreaM2 = (parseFloat(basicInfo.evWidth) || 0) * (parseFloat(basicInfo.evDepth) || 0)
+  const stackLevel = parseFloat(basicInfo.stackLevel) || 4
   const usedAreaM2 = loadItems.reduce((acc, it) => {
     const a = (parseFloat(it.width) || 0) * (parseFloat(it.depth) || 0)
-    return acc + a * (parseInt(it.qty) || 0)
+    return acc + (a * (parseInt(it.qty) || 0)) / stackLevel
   }, 0)
   const loadingRate = (evAreaM2 > 0)
-    ? ((usedAreaM2 / evAreaM2) * 0.9 * 100)
+    ? ((usedAreaM2 / evAreaM2) * 100)
     : null
 
   /* ── 호기별 통계 (대시보드) ── */
@@ -208,25 +209,29 @@ export default function ElevatorWorkload({
           E/V 적재율 자동 계산
           <HelpHint title="E/V 적재율">
             <p>케이지 면적 대비 실제로 사용된 적재 면적의 비율입니다.</p>
-            <HintFormula>{`E/V 면적     = 가로 × 세로                        [m²]
-실 적재 면적 = Σ (가로 × 세로 × 개수)              [m²]
-적재율(%)    = 실 적재 ÷ E/V 면적 × 0.9 × 100
-              ※ 0.9 = 통로 / 여유 보정 계수`}</HintFormula>
+            <HintFormula>{`E/V 면적     = 가로 × 세로                          [m²]
+실 적재 면적 = Σ (가로 × 세로 × 개수) ÷ 적재 단수 [m²]
+적재율(%)    = 실 적재 면적 ÷ E/V 면적 × 100`}</HintFormula>
             <p>아래 <b>실 적재 항목 입력</b>에서 박스/대차/파렛트/손수레 등 종류와 개수, 치수를 추가하세요.</p>
             <HintNote type="warn">100% 가까이 차면 운행 안전성에 영향이 있을 수 있습니다.</HintNote>
           </HelpHint>
         </div>
         <div className="input-grid">
+          <div className="input-group">
+            <div className="input-label-row"><span className="input-label">적재 단수</span></div>
+            <input className="input-field" type="number" step="1" min={1} value={basicInfo.stackLevel ?? 4}
+              onChange={e => updateElevatorBasic({ stackLevel: e.target.value })} placeholder="예: 4" />
+          </div>
           <div className="result-box tone-slate">
             <span className="result-box__label">E/V 면적 = 가로 × 세로</span>
             <span className="result-box__value">{evAreaM2 > 0 ? `${evAreaM2.toFixed(1)} m²` : '—'}</span>
           </div>
           <div className="result-box tone-blue">
-            <span className="result-box__label">실제 사용 적재 면적</span>
+            <span className="result-box__label">실제 사용 적재 면적 = Σ(가로×세로×개수) ÷ {stackLevel}</span>
             <span className="result-box__value">{usedAreaM2 > 0 ? `${usedAreaM2.toFixed(1)} m²` : '—'}</span>
           </div>
-          <div className="result-box full-width" style={{ background: '#047857' }}>
-            <span className="result-box__label">E/V 적재율 = 실적재 / E/V 면적 × 0.9</span>
+          <div className="result-box full-width tone-final">
+            <span className="result-box__label">E/V 적재율 = 실적재 / E/V 면적</span>
             <span className="result-box__value">{loadingRate !== null ? `${loadingRate.toFixed(1)}%` : '—'}</span>
           </div>
         </div>
@@ -297,7 +302,7 @@ export default function ElevatorWorkload({
               {WEIGHT_OPTIONS.map(w => <option key={w} value={w}>{w.toFixed(1)}</option>)}
             </select>
           </div>
-          <div className="result-box">
+          <div className="result-box tone-final">
             <span className="result-box__label">총 운반 시간</span>
             <span className="result-box__value">{totalTransportSec.toFixed(1)}초</span>
           </div>
@@ -309,7 +314,7 @@ export default function ElevatorWorkload({
             <span className="result-box__label">부하 가중 시간 = 3600 × {weight}</span>
             <span className="result-box__value">{weightedTime.toFixed(0)}초</span>
           </div>
-          <div className="result-box" style={{ background: workloadRate > 90 ? '#92400E' : workloadRate > 70 ? '#B45309' : '#047857' }}>
+          <div className="result-box tone-final">
             <span className="result-box__label">E/V 부하율</span>
             <span className="result-box__value">{workloadRate.toFixed(1)}%</span>
           </div>

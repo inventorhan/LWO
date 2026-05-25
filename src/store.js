@@ -74,7 +74,7 @@ export const initialState = {
     /* 호기별 결과 비교를 위해 dataByHogi 저장 (key는 string '1'~'9') */
     dataByHogi: {
       '1': {
-        basicInfo: { weight: 0.8, evWidth: '', evDepth: '' },
+        basicInfo: { weight: 0.8, evWidth: '', evDepth: '', stackLevel: 4 },
         measurements: [createInitialElevatorMeasurement(1)],
         loadItems: [],   // E/V 적재율 계산용 박스/대차 항목
         photos: []
@@ -83,7 +83,7 @@ export const initialState = {
   },
   area: {
     factory: { width: '', height: '', photo: null },
-    /* zones[i].items[j]: 박스/파렛트/대차 + 높이(최저/최고) + 체적가중치 */
+    /* zones[i].items[j]: 박스/파렛트/대차 + 높이(최저/최고) + 최고 높이 점유율 */
     zones: [
       { no: 1, width: '', height: '', photo: null, items: [] }
     ]
@@ -110,12 +110,15 @@ export const initialState = {
       '세탁기::Top Loader': { records: [] }
     }
   },
-  amr: { tactTime: '', recycleRate: '', loadQty: '', amrtSpeed: '', distance: '', loadCount: '', loadTime: '', unloadCount: '', unloadTime: '', operationRate: 0.8, spare: 1 },
+  amr: { tactTime: '', recycleRate: '', loadQty: '', amrtSpeed: '', distance: '', loadCount: '', loadTime: '', unloadCount: '', unloadTime: '', operationRate: 1.2, spare: 1 },
   logisticsPersonnel: {
     pickTime: '', loadTime: '', distance: '', speed: 1.2,
     tripsPerHour: '', hoursPerDay: 8, availability: 130, weight: 1.3
   },
   warehouseArea: {
+    mode: 'uph',
+    uphItems: [],
+    containerItems: [],
     items: []
   },
   automationRate: {
@@ -195,7 +198,7 @@ export function useAppState() {
             next[k] = {
               ...h,
               basicInfo: h.basicInfo
-                ? { ...h.basicInfo, evWidth: convM(h.basicInfo.evWidth), evDepth: convM(h.basicInfo.evDepth) }
+                ? { ...h.basicInfo, evWidth: convM(h.basicInfo.evWidth), evDepth: convM(h.basicInfo.evDepth), stackLevel: h.basicInfo.stackLevel ?? h.loadItems?.[0]?.stackLevel ?? 4 }
                 : h.basicInfo,
               loadItems: (h.loadItems || []).map(it => ({
                 ...it, width: convM(it.width), depth: convM(it.depth)
@@ -295,7 +298,7 @@ export function useAppState() {
           dataByHogi: {
             ...s.elevator.dataByHogi,
             [hogiKey]: {
-              basicInfo: { weight: 0.8, evWidth: '', evDepth: '' },
+              basicInfo: { weight: 0.8, evWidth: '', evDepth: '', stackLevel: 4 },
               measurements: [createInitialElevatorMeasurement(1)],
               loadItems: [],
               photos: []

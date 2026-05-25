@@ -27,7 +27,7 @@ function blobToBase64(blob) {
 }
 
 /* 파일을 폰의 Documents/LWO 폴더에 저장하고 공유 시트 자동 표시 */
-async function saveNative({ filename, base64, mimeType, title }) {
+async function saveNative({ filename, base64, title }) {
   const path = `LWO/${filename}`
   await Filesystem.writeFile({
     path,
@@ -47,7 +47,7 @@ async function saveNative({ filename, base64, mimeType, title }) {
       url: fileInfo.uri,
       dialogTitle: '파일 공유'
     })
-  } catch (e) {
+  } catch {
     /* 사용자가 공유 취소해도 파일은 이미 저장됨 — 무시 */
   }
   return { path: fileInfo.uri }

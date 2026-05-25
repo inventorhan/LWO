@@ -431,6 +431,12 @@ select.input-field {
 
 .btn-primary { background: var(--color-primary); color: white; }
 .btn-primary:hover { background: var(--color-primary-dark); }
+.btn-soft {
+  background: #FDF2F4;
+  color: var(--color-primary);
+  border: 1px solid #E8C5CC;
+}
+.btn-soft:hover { background: #F4E1E7; }
 
 .btn-time {
   width: 100%;
@@ -488,6 +494,93 @@ select.input-field {
   color: white;
   border-color: var(--color-primary);
   box-shadow: 0 4px 12px rgba(30, 64, 175, 0.2);
+}
+
+.compact-mode-card {
+  padding: 10px 12px;
+  background: white;
+}
+
+.segmented-control {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: #F4EFF1;
+  border: 1px solid var(--color-card-border);
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
+.segmented-btn {
+  flex: 1 0 150px;
+  height: 36px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-family: inherit;
+  font-size: 0.84rem;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.segmented-btn.active {
+  background: var(--color-primary);
+  color: white;
+  box-shadow: var(--shadow-sm);
+}
+
+.module-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.action-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.item-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 0 0 10px;
+  margin-bottom: 12px;
+}
+
+.mini-tab {
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 6px;
+  border: 1px solid var(--color-card-border);
+  background: white;
+  color: var(--color-text-secondary);
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.mini-tab.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+.mini-tab.add {
+  background: #FDF2F4;
+  border-color: #E8C5CC;
+  color: var(--color-primary);
 }
 
 /* ===== Bottom Nav (Mobile only) ===== */
@@ -819,11 +912,15 @@ select.input-field {
   box-shadow: var(--shadow-sm);
 }
 
-/* ===== Tone-down result-box for sub fields ===== */
-.result-box.tone-dark { background: var(--color-accent-dark); }
-.result-box.tone-blue { background: var(--color-primary); }
+/* 자동 계산 단계 색상: 초기(회색) → 중간(녹색) → 결론(LG 레드) */
+.result-box.tone-initial,
 .result-box.tone-slate { background: var(--color-accent); }
-.result-box.tone-success { background: var(--color-success); }
+.result-box.tone-middle,
+.result-box.tone-success,
+.result-box.tone-blue { background: var(--color-success); }
+.result-box.tone-final,
+.result-box.tone-final-dark { background: var(--color-primary); }
+.result-box.tone-dark { background: var(--color-accent-dark); }
 
 /* ===== 재고 모듈 전용 ===== */
 .inv-section-label {

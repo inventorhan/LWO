@@ -3,7 +3,7 @@ import { fileToBase64, calcArea } from '../shared/utils/common'
 import HelpHint, { HintFormula, HintNote } from '../shared/components/HelpHint'
 
 const LOAD_TYPES = ['박스', '파렛트', '대차', 'Rack', '기타']
-/* 체적 가중치 select 옵션 */
+/* 최고 높이 점유율 select 옵션 */
 const VOL_WEIGHT_OPTIONS = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
 
 function emptyZone(no) {
@@ -20,10 +20,24 @@ function fmtArea(m2) {
   return `${m2.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} m²`
 }
 
-/* 높이(m, 소수점 1자리) */
-function fmtMeter(m) {
-  if (m == null || isNaN(m) || m <= 0) return '—'
-  return `${m.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} m`
+function PhotoButton({ photo, onChange, label = '사진 촬영' }) {
+  return (
+    <label className="btn" style={{
+      minHeight: 44, padding: 6,
+      background: photo ? '#fff' : '#F4EFF1',
+      border: '1.5px dashed #D4C8CD',
+      color: '#7C6E74', fontSize: '0.78rem', gap: 6, cursor: 'pointer'
+    }}>
+      {photo ? (
+        <img src={photo} alt="" style={{ height: 30, width: 30, objectFit: 'cover', borderRadius: 4 }} />
+      ) : (
+        <span style={{ fontSize: '1rem' }}>📷</span>
+      )}
+      <span>{photo ? '변경' : label}</span>
+      <input type="file" accept="image/*" capture="environment" style={{ display: 'none' }}
+        onChange={e => { if (e.target.files[0]) onChange(e.target.files[0]) }} />
+    </label>
+  )
 }
 
 export default function AreaEfficiency({ data, updateData }) {
@@ -37,6 +51,7 @@ export default function AreaEfficiency({ data, updateData }) {
   const setZones = (upd) => updateData({ zones: typeof upd === 'function' ? upd(zones) : upd })
 
   const factoryArea = calcArea(factory.width, factory.height)
+  const factoryPhotos = Array.isArray(factory.photos) ? factory.photos : (factory.photo ? [factory.photo] : [])
 
   const addZone = () => {
     const next = [...zones, emptyZone(zones.length + 1)]
@@ -63,7 +78,7 @@ export default function AreaEfficiency({ data, updateData }) {
   const handlePhoto = async (type, zIdx, iIdx, file) => {
     try {
       const b64 = await fileToBase64(file)
-      if (type === 'factory') setFactory({ photo: b64 })
+      if (type === 'factory') setFactory({ photos: [...factoryPhotos, b64], photo: null })
       else if (type === 'zone') updateZone(zIdx, { photo: b64 })
       else if (type === 'item') updateItem(zIdx, iIdx, { photo: b64 })
     } catch {/* ignore */}
@@ -72,7 +87,7 @@ export default function AreaEfficiency({ data, updateData }) {
   const curZone = zones[safeActiveZone]
   const zoneArea = curZone ? calcArea(curZone.width, curZone.height) : null
 
-  /* 체적 효율: (최고높이 - 최저높이) × 체적가중치 — 모든 단위는 m */
+  /* 체적 효율: 최고/최저 높이 차이에 최고 높이 점유율을 반영 */
   const volumeStats = (curZone?.items || []).map(it => {
     const lo = parseFloat(it.minHeight)
     const hi = parseFloat(it.maxHeight)
@@ -89,30 +104,6 @@ export default function AreaEfficiency({ data, updateData }) {
   const avgUsedPct = volumeStats.length > 0
     ? volumeStats.reduce((acc, v) => acc + v.usedPct, 0) / volumeStats.length
     : null
-
-  /* 전체 최저/최고 (m 단위) */
-  const allMinHeights = (curZone?.items || []).map(i => parseFloat(i.minHeight)).filter(h => !isNaN(h) && h > 0)
-  const allMaxHeights = (curZone?.items || []).map(i => parseFloat(i.maxHeight)).filter(h => !isNaN(h) && h > 0)
-  const minHeight = allMinHeights.length ? Math.min(...allMinHeights) : null
-  const maxHeight = allMaxHeights.length ? Math.max(...allMaxHeights) : null
-
-  const PhotoButton = ({ photo, onChange, label = '사진 촬영' }) => (
-    <label className="btn" style={{
-      minHeight: 44, padding: 6,
-      background: photo ? '#fff' : '#F4EFF1',
-      border: '1.5px dashed #D4C8CD',
-      color: '#7C6E74', fontSize: '0.78rem', gap: 6, cursor: 'pointer'
-    }}>
-      {photo ? (
-        <img src={photo} alt="" style={{ height: 30, width: 30, objectFit: 'cover', borderRadius: 4 }} />
-      ) : (
-        <span style={{ fontSize: '1rem' }}>📷</span>
-      )}
-      <span>{photo ? '변경' : label}</span>
-      <input type="file" accept="image/*" capture="environment" style={{ display: 'none' }}
-        onChange={e => { if (e.target.files[0]) onChange(e.target.files[0]) }} />
-    </label>
-  )
 
   return (
     <div style={{ animation: 'fadeIn 0.3s ease' }}>
@@ -143,32 +134,36 @@ export default function AreaEfficiency({ data, updateData }) {
               onChange={e => setFactory({ height: e.target.value })} placeholder="예: 30.0" />
           </div>
           <div className="input-group full-width">
-            <div className="result-box tone-dark">
+            <div className="result-box tone-slate">
               <span className="result-box__label">공장 면적 (자동)</span>
               <span className="result-box__value">{fmtArea(factoryArea)}</span>
             </div>
           </div>
           <div className="input-group full-width">
             <span className="input-label">공장 사진</span>
+            {factoryPhotos.length > 0 && (
+              <div className="photo-gallery" style={{ marginBottom: 8 }}>
+                {factoryPhotos.map((photo, idx) => (
+                  <div key={idx} className="photo-item" style={{ width: 120, height: 90 }}>
+                    <img src={photo} alt="" />
+                    <button onClick={() => setFactory({ photos: factoryPhotos.filter((_, i) => i !== idx), photo: null })}
+                      style={{ position: 'absolute', right: 3, top: 3, border: 'none', background: 'rgba(0,0,0,0.55)', color: 'white', borderRadius: 4, width: 24, height: 24, cursor: 'pointer' }}>×</button>
+                  </div>
+                ))}
+              </div>
+            )}
             <label className="btn" style={{
-              height: factory.photo ? 'auto' : 80,
-              minHeight: factory.photo ? 160 : 80,
+              height: 72,
               width: '100%',
-              padding: factory.photo ? 4 : 12,
+              padding: 12,
               background: '#F4EFF1', border: '1.5px dashed #D4C8CD', color: '#7C6E74',
               flexDirection: 'column', fontSize: '0.85rem', gap: 4, cursor: 'pointer',
               overflow: 'hidden', whiteSpace: 'normal'
             }}>
-              {factory.photo
-                ? <img src={factory.photo} alt="공장" style={{ maxHeight: 220, width: '100%', objectFit: 'contain', borderRadius: 6, display: 'block' }} />
-                : <><span style={{ fontSize: '1.5rem' }}>📷</span><span>공장 사진 촬영</span></>}
+              <span style={{ fontSize: '1.5rem' }}>📷</span><span>공장 사진 추가</span>
               <input type="file" accept="image/*" capture="environment" style={{ display: 'none' }}
                 onChange={e => { if (e.target.files[0]) handlePhoto('factory', null, null, e.target.files[0]) }} />
             </label>
-            {factory.photo && (
-              <button className="btn" style={{ marginTop: 6, background: '#FEF3C7', color: '#B45309', height: 32, fontSize: '0.78rem' }}
-                onClick={() => setFactory({ photo: null })}>사진 제거</button>
-            )}
           </div>
         </div>
       </div>
@@ -232,7 +227,7 @@ export default function AreaEfficiency({ data, updateData }) {
                   onChange={(f) => handlePhoto('zone', safeActiveZone, null, f)} />
               </div>
               <div className="input-group full-width">
-                <div className="result-box tone-dark">
+                <div className="result-box tone-slate">
                   <span className="result-box__label">구역 면적 (자동)</span>
                   <span className="result-box__value">{fmtArea(zoneArea)}</span>
                 </div>
@@ -296,7 +291,7 @@ export default function AreaEfficiency({ data, updateData }) {
                         onChange={e => updateItem(safeActiveZone, iIdx, { maxHeight: e.target.value })} placeholder="예: 1.7" />
                     </div>
                     <div className="input-group">
-                      <div className="input-label-row"><span className="input-label">체적 가중치</span></div>
+                      <div className="input-label-row"><span className="input-label">최고 높이 점유율</span></div>
                       <select className="input-field" value={item.volWeight ?? 0.8}
                         onChange={e => updateItem(safeActiveZone, iIdx, { volWeight: parseFloat(e.target.value) })}>
                         {VOL_WEIGHT_OPTIONS.map(w => <option key={w} value={w}>{w.toFixed(1)}</option>)}
@@ -314,8 +309,8 @@ export default function AreaEfficiency({ data, updateData }) {
                       </div>
                     </div>
                     <div className="input-group full-width">
-                      <div className="result-box tone-slate">
-                        <span className="result-box__label">체적 손실율 = ((최고−최저) / 최고) × 가중치(%)</span>
+                      <div className="result-box tone-final">
+                        <span className="result-box__label">체적 손실율 = ((최고−최저) / 최고) × 최고 높이 점유율</span>
                         <span className="result-box__value">{lossPct !== null ? `${lossPct.toFixed(1)}%` : '—'}</span>
                       </div>
                     </div>
@@ -329,16 +324,8 @@ export default function AreaEfficiency({ data, updateData }) {
 
             <div style={{ height: 1, background: 'var(--color-card-border)', margin: '16px 0' }} />
             <div className="input-grid" style={{ marginTop: 8 }}>
-              <div className="result-box tone-blue">
-                <span className="result-box__label">최저 높이 (전체 최소)</span>
-                <span className="result-box__value">{fmtMeter(minHeight)}</span>
-              </div>
-              <div className="result-box tone-blue">
-                <span className="result-box__label">최고 높이 (전체 최대)</span>
-                <span className="result-box__value">{fmtMeter(maxHeight)}</span>
-              </div>
-              <div className="result-box full-width tone-dark">
-                <span className="result-box__label">평균 체적 사용율 = ((최고−손실) ÷ 최고) 평균</span>
+              <div className="result-box full-width tone-final">
+                <span className="result-box__label">전체 적재 항목 평균 체적 사용율</span>
                 <span className="result-box__value">{avgUsedPct !== null ? `${avgUsedPct.toFixed(1)}%` : '—'}</span>
               </div>
             </div>
@@ -365,7 +352,7 @@ export default function AreaEfficiency({ data, updateData }) {
               <HelpHint title="구역별 면적 효율 분석">
                 <p>모든 구역의 효율을 한 화면에서 비교하는 결과 영역입니다.</p>
                 <HintFormula>{`면적 효율(%)    = 실사용 면적 ÷ 구역 면적 × 100
-체적 손실율(%) = ((최고−최저) ÷ 최고) × 가중치(%)
+체적 손실율(%) = ((최고−최저) ÷ 최고) × 최고 높이 점유율
 평균 체적 사용율 = ((최고−손실) ÷ 최고) 항목 평균`}</HintFormula>
                 <ul style={{ paddingLeft: 18, margin: '6px 0' }}>
                   <li>막대그래프: 각 구역의 효율(%) — 색상으로 강도 표시</li>
