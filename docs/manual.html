@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LWO 물류 분석 Tool — 사용 설명서 (교육용)</title>
-<meta name="description" content="LWO 물류 작업 최적화 분석 도구 — 9개 모듈 사용 가이드 + 공식 + 예시">
+<meta name="description" content="LWO 물류 작업 최적화 분석 도구 — 8개 메뉴와 9가지 분석 사용 가이드 + 공식 + 예시">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
@@ -424,8 +424,8 @@
     <h1>LWO 물류 분석 Tool<small>사용 설명서 — 교육용 가이드북</small></h1>
     <p class="subtitle">물류 작업 최적화(Logistics Work Optimize)의 9가지 핵심 KPI를<br>휴대폰 하나로 측정·분석·시각화하는 방법</p>
     <div class="meta">
-      <span>버전 v1.2.7</span>
-      <span>9개 분석 모듈</span>
+      <span>버전 v1.2.8</span>
+      <span>8개 메뉴와 9가지 분석</span>
       <span>처음 사용자 대상</span>
     </div>
     <div class="actions">
@@ -463,7 +463,7 @@
           <li><a href="#area-formula">면적 + 체적 공식</a></li>
         </ul>
       </li>
-      <li><a href="#inventory">재고 보관량</a>
+      <li><a href="#inventory">UPH 기준 재고</a>
         <ul>
           <li><a href="#inv-purpose">왜 산출하나?</a></li>
           <li><a href="#inv-step">4단계 입력</a></li>
@@ -517,7 +517,7 @@
       <h2 class="chapter-title">시작하기 — LWO Tool 소개</h2>
       <p class="chapter-lead">LWO는 물류 현장의 아홉 가지 핵심 지표를 휴대폰 하나로 측정·계산할 수 있는 도구입니다. 스톱워치 + 줄자 + 메모지를 화면 한 곳에서 처리합니다.</p>
 
-      <h3><span class="h-num">1</span>9개 분석 모듈 한눈에 보기</h3>
+      <h3><span class="h-num">1</span>8개 메뉴와 9가지 분석 한눈에 보기</h3>
       <div class="module-grid">
         <div class="module-card">
           <span class="ico">👷</span>
@@ -536,8 +536,8 @@
         </div>
         <div class="module-card">
           <span class="ico">📦</span>
-          <h5>재고 보관량</h5>
-          <p>고객 요구량 + 운반 리드타임 + 운영 재고 합산 <b>최종 적정 재고</b> + 적정 Space 면적</p>
+          <h5>적정 재고량</h5>
+          <p>UPH 기준 재고와 실적 기준 재고를 탭으로 선택해 <b>Total 적정 재고</b>와 통계 재고를 산출</p>
         </div>
         <div class="module-card">
           <span class="ico">📈</span>
@@ -552,12 +552,12 @@
         <div class="module-card">
           <span class="ico">👥</span>
           <h5>물류 적정 인원</h5>
-          <p>피킹·이동·로딩/언로딩 시간과 운반 횟수로 <b>필요 인원</b> 산출</p>
+          <p>Item별 피킹·언로딩·이동 시간과 표준작업 여유율로 <b>최종 적정 인원</b> 산출</p>
         </div>
         <div class="module-card">
           <span class="ico">🏭</span>
           <h5>물류 창고 면적</h5>
-          <p>CMDT별 물동·용기 면적·DIO·여유율로 <b>창고 면적</b> 산출</p>
+          <p>UPH 기준 또는 용기 사이즈 기준으로 <b>물류 필요 면적 합계</b> 산출</p>
         </div>
         <div class="module-card">
           <span class="ico">⚙️</span>
@@ -592,7 +592,7 @@
         <tbody>
           <tr><td>📂 열기</td><td>이전에 저장한 JSON 파일 불러오기</td></tr>
           <tr><td>💾 저장</td><td>현재 입력을 <code>Documents/LWO/</code> 폴더에 JSON으로 저장</td></tr>
-          <tr><td>📊 엑셀</td><td>9개 모듈 전체를 엑셀 파일로 내보내기</td></tr>
+          <tr><td>📊 엑셀</td><td>9가지 분석 결과를 엑셀 파일로 내보내기</td></tr>
           <tr><td>📖 설명서</td><td>앱 내장 도움말 모달 (이 가이드의 요약 버전)</td></tr>
           <tr><td>🔄 초기화</td><td>모든 입력 데이터 삭제 (⚠ 복구 불가)</td></tr>
         </tbody>
@@ -724,10 +724,10 @@
       <h3 id="elevator-formula"><span class="h-num">3</span>공식 — 적재율 + 부하율</h3>
       <pre class="formula"><span class="com"># 1) 면적</span>
 E/V 면적     = 가로 × 세로                        [m²]
-실 적재 면적 = Σ (가로 × 세로 × 개수)              [m²]
+실 적재 면적 = Σ (가로 × 세로 × 개수) ÷ 적재 단수  [m²]
 
-<span class="com"># 2) 적재율 (0.9 = 통로/여유 보정)</span>
-<span class="res">적재율(%) = 실 적재 ÷ E/V 면적 × 0.9 × 100</span>
+<span class="com"># 2) 적재율</span>
+<span class="res">적재율(%) = 실 적재 ÷ E/V 면적 × 100</span>
 
 <span class="com"># 3) 부하율</span>
 부하 가중 시간 = 3600 × <span class="var">가중치</span>
@@ -767,7 +767,7 @@ E/V 면적     = 가로 × 세로                        [m²]
         </div>
         <div class="step">
           <div class="step-num">3</div>
-          <div><div class="step-title">적재 항목 입력</div><div class="step-body">박스/파렛트/대차/Rack/기타 — 종류·개수·가로·세로(m) + 최저/최고 높이(m) + 체적 가중치 (보통 0.8) 입력. 실 적재 사진도 함께 기록 가능.</div></div>
+          <div><div class="step-title">적재 항목 입력</div><div class="step-body">박스/파렛트/대차/Rack/기타 — 종류·개수·가로·세로(m) + 최저/최고 높이(m) + 최고 높이 점유율(보통 0.8) 입력. 실 적재 사진도 함께 기록 가능.</div></div>
         </div>
       </div>
 
@@ -803,8 +803,8 @@ E/V 면적     = 가로 × 세로                        [m²]
     <!-- ============= INVENTORY ============= -->
     <section class="chapter" id="inventory">
       <span class="chapter-num">CHAPTER 5</span>
-      <h2 class="chapter-title">📦 재고 보관량 (적정 재고 산출)</h2>
-      <p class="chapter-lead">고객사로 공급하는 물량이 부족하지 않도록 부족/잉여 차이의 절대값 + 운반 리드타임 + 고객사 운영 재고를 합산해 최종 보관량을 도출합니다.</p>
+      <h2 class="chapter-title">📦 UPH 기준 재고 (적정 재고 산출)</h2>
+      <p class="chapter-lead">적정 재고량 메뉴의 UPH 기준 재고 탭에서 고객사 공급 물량이 부족하지 않도록 부족/잉여 차이의 절대값 + 운반 리드타임 + 고객사 운영 재고를 합산합니다.</p>
 
       <h3 id="inv-purpose"><span class="h-num">1</span>왜 산출하나요?</h3>
       <p><b>"고객사 라인이 절대 멈추지 않게"</b> 자사 창고에 항상 확보해야 하는 최소 재고를 정량화합니다. 너무 많으면 보관 비용 낭비, 너무 적으면 라인 정지 리스크.</p>
@@ -844,7 +844,7 @@ E/V 면적     = 가로 × 세로                        [m²]
         </div>
         <div class="step">
           <div class="step-num">④</div>
-          <div><div class="step-title">최종 적정 재고 = ① 절대값 + ② + ③</div><div class="step-body">자동 합산되어 화면 최하단에 표시됩니다.</div></div>
+          <div><div class="step-title">Total 적정 재고 = ① 절대값 + ② + ③</div><div class="step-body">자동 합산되어 화면 최하단에 표시됩니다.</div></div>
         </div>
       </div>
 
@@ -861,7 +861,7 @@ E/V 면적     = 가로 × 세로                        [m²]
 <span class="com"># 합산</span>
 리드타임 재고 = 숙성 + 안심 + 상차 + 이동
 운영 재고     = 하차 + 대기 + 안전 재고
-<span class="res">최종 적정 재고 = 적용 수량 + 리드타임 재고 + 운영 재고</span></pre>
+<span class="res">Total 적정 재고 = 적용 수량 + 리드타임 재고 + 운영 재고</span></pre>
 
       <h3 id="inv-example"><span class="h-num">4</span>계산 예시</h3>
       <div class="example">
@@ -876,13 +876,13 @@ E/V 면적     = 가로 × 세로                        [m²]
 운영:     하차 20s + 대기 160s + 안전 3600s = 3780s
   → (3780 ÷ 3600) × 300 = <span class="res">315대</span>
 
-<span class="res">최종 적정 재고 = 1200 + 927 + 315 = 2,442 대</span></pre>
+<span class="res">Total 적정 재고 = 1200 + 927 + 315 = 2,442 대</span></pre>
       </div>
 
       <div class="note info"><span class="note-label">💡</span>모든 시간 단위는 <b>초(sec)</b>. 1시간 = 3600초. 고객보다 자사 생산량이 많아 차이가 음수여도 최종 재고 계산에는 절대값으로 반영됩니다.</div>
 
       <h3 id="inv-space"><span class="h-num">5</span>적정 Space 산출 (보너스)</h3>
-      <p>최종 적정 재고 수량을 <b>실제 창고 바닥 면적(m²)</b>으로 환산합니다.</p>
+      <p>Total 적정 재고 수량을 <b>실제 창고 바닥 면적(m²)</b>으로 환산합니다.</p>
       <pre class="formula"><span class="com"># 면적 변환</span>
 1단 면적     = 가로 × 세로                       [m²]
 필요 바닥 면적 = 1단 × 적정 재고 ÷ 높이(단)         [m²]
@@ -895,7 +895,7 @@ E/V 면적     = 가로 × 세로                        [m²]
           <tr><td><b>여유율 (계수)</b></td><td>통로·안전 공간 보정 (1.2 = 20% 여유)</td><td>1.2</td></tr>
         </tbody>
       </table>
-      <div class="note info"><span class="note-label">💡</span>최종 적정 재고 = 2,442대일 때, 위 입력값을 적용하면: (1.2×1.2 × 2442) ÷ 3 × 1.2 ≈ <b>1,406 m²</b>.</div>
+      <div class="note info"><span class="note-label">💡</span>Total 적정 재고 = 2,442대일 때, 위 입력값을 적용하면: (1.2×1.2 × 2442) ÷ 3 × 1.2 ≈ <b>1,406 m²</b>.</div>
     </section>
 
     <!-- ============= INV STATS ============= -->
@@ -971,9 +971,9 @@ E/V 면적     = 가로 × 세로                        [m²]
       <div class="note info"><span class="note-label">💡</span>출하량 변동이 클수록 (표편↑) 안전 재고가 커집니다 — 자연스러운 결과.</div>
       <div class="note warn"><span class="note-label">⚠</span>데이터가 1~2일뿐이면 표준편차가 의미 없어 신뢰도 낮음. 7일 이상 권장.</div>
 
-      <h3><span class="h-num">5</span>📦 재고 보관량 모듈과 차이</h3>
+      <h3><span class="h-num">5</span>📦 UPH 기준 재고와 차이</h3>
       <table>
-        <thead><tr><th>항목</th><th>📦 재고 보관량</th><th>📈 실적 기준 재고</th></tr></thead>
+        <thead><tr><th>항목</th><th>📦 UPH 기준 재고</th><th>📈 실적 기준 재고</th></tr></thead>
         <tbody>
           <tr><td>데이터 종류</td><td>계획/이론 (UPH·시간)</td><td>실제 운영 실적</td></tr>
           <tr><td>적합 시점</td><td>신규 라인 설계 시</td><td>기존 라인 최적화</td></tr>
@@ -1001,7 +1001,7 @@ E/V 면적     = 가로 × 세로                        [m²]
         </div>
         <div class="step">
           <div class="step-num">3</div>
-          <div><div class="step-title">가동율 / 예비</div><div class="step-body">가동율(0~1, 충전·수리 시간 보정. 보통 0.8), Spare(예비 대수, 보통 1). → 최종 필요 대수.</div></div>
+          <div><div class="step-title">AMR 여유율 / 예비</div><div class="step-body">AMR 여유율(예: 1.2)과 Spare(예비 대수, 보통 1)를 입력해 최종 필요 대수를 산출합니다.</div></div>
         </div>
       </div>
 
@@ -1018,13 +1018,13 @@ Total 언로딩    = 언로딩 횟수 × 시간
 <span class="res">총 왕복 시간    = (왕복 거리 ÷ Speed) + Total 로딩 + Total 언로딩</span>
 
 <span class="com"># 3) 필요 대수 (올림 = ⌈x⌉)</span>
-원단위        = ⌈ 총 왕복시간 ÷ Cycle ⌉
-가동율 적용   = ⌈ 원단위 ÷ <span class="var">가동율</span> ⌉
-<span class="res">필요 대수     = 가동율 적용 + Spare</span></pre>
+원단위        = 총 왕복시간 ÷ Cycle
+여유율 적용   = 원단위 × <span class="var">AMR 여유율</span>
+<span class="res">필요 대수     = ⌈ 여유율 적용 ⌉ + Spare</span></pre>
 
       <h3 id="amr-example"><span class="h-num">3</span>상세 계산 풀이</h3>
       <div class="example">
-        <h5>Tact 60s, 회수율 90%, 장입 5개/회 / Speed 1.5m/s, 편도 60m, 로딩/언로딩 각 1회 × 15s / 가동율 0.8, Spare 1</h5>
+        <h5>Tact 60s, 회수율 90%, 장입 5개/회 / Speed 1.5m/s, 편도 60m, 로딩/언로딩 각 1회 × 15s / AMR 여유율 1.2, Spare 1</h5>
         <pre class="formula" style="margin:0;"><span class="com"># 1) 기준</span>
 UPH        = 3600 ÷ 60 × 0.9 = <span class="res">54</span>
 운행 횟수   = 54 ÷ 5 = <span class="res">10.8 회/h</span>
@@ -1035,9 +1035,9 @@ Cycle      = 3600 ÷ 10.8 ≈ <span class="res">333 초</span>
 왕복 시간   = 120 ÷ 1.5 + 15 + 15 = <span class="res">110 초</span>
 
 <span class="com"># 3) 대수 (소수 → 올림)</span>
-원단위      = ⌈ 110 ÷ 333 ⌉ = ⌈ 0.33 ⌉ = <span class="res">1 대</span>
-가동율 적용 = ⌈ 1 ÷ 0.8 ⌉  = ⌈ 1.25 ⌉ = <span class="res">2 대</span>
-<span class="res">필요 대수    = 2 + 1 = 3 대</span></pre>
+원단위      = 110 ÷ 333 = <span class="res">0.33 대</span>
+여유율 적용 = 0.33 × 1.2 = <span class="res">0.40 대</span>
+<span class="res">필요 대수    = ⌈ 0.40 ⌉ + 1 = 2 대</span></pre>
       </div>
 
       <div class="note warn"><span class="note-label">⚠</span>총 왕복 시간이 Cycle Time보다 짧아야 1대로 처리됩니다. 둘 비교를 항상 확인하세요.</div>
@@ -1047,46 +1047,45 @@ Cycle      = 3600 ÷ 10.8 ≈ <span class="res">333 초</span>
     <section class="chapter" id="personnel-plan">
       <span class="chapter-num">CHAPTER 8</span>
       <h2 class="chapter-title">👥 물류 적정 인원</h2>
-      <p class="chapter-lead">피킹·이동·로딩/언로딩 시간과 운반 횟수를 기준으로 물류 운반에 필요한 적정 인원을 산출합니다. 신규 라인 투입 전 인원 산정 또는 기존 라인 인원 검토에 활용합니다.</p>
+      <p class="chapter-lead">적재 Item별 피킹·언로딩·이동 시간과 운반 횟수, 표준작업 여유율을 기준으로 물류 운반에 필요한 최종 적정 인원을 산출합니다. 참조 Excel 양식으로 일괄 입력할 수 있습니다.</p>
 
       <h3 id="personnel-step"><span class="h-num">1</span>입력 절차</h3>
       <div class="steps">
         <div class="step">
           <div class="step-num">1</div>
-          <div><div class="step-title">작업 조건 입력</div><div class="step-body">피킹 시간, 로딩/언로딩 시간, 왕복 이동 거리, 이동 속도를 입력합니다.</div></div>
+          <div><div class="step-title">Item 추가/선택</div><div class="step-body">적재 Item별로 피킹 시간, 언로딩 시간, 1회 이동거리, 1회 이동 속도를 입력합니다.</div></div>
         </div>
         <div class="step">
           <div class="step-num">2</div>
-          <div><div class="step-title">운반 횟수 입력</div><div class="step-body">시간당 운반 횟수와 일 작업 시간을 입력하면 일 운반 횟수와 총 운반 시간이 자동 산출됩니다.</div></div>
+          <div><div class="step-title">일 운반 시간 산출</div><div class="step-body">시간당 운반 횟수와 일 작업 시간을 입력하면 일 운반 횟수와 일 운반 시간이 자동 산출됩니다.</div></div>
         </div>
         <div class="step">
           <div class="step-num">3</div>
-          <div><div class="step-title">여유율 적용</div><div class="step-body">휴식·부대작업·현장 여건을 반영하는 여유율(%)을 입력해 최종 적정 인원을 보정합니다.</div></div>
+          <div><div class="step-title">표준 작업 시간 적용</div><div class="step-body">표준작업 여유율을 입력해 표준 운반 작업 시간과 최종 적정 인원을 계산합니다.</div></div>
         </div>
       </div>
 
       <h3 id="personnel-formula"><span class="h-num">2</span>산식 / 예시</h3>
       <pre class="formula"><span class="com"># 1회 운반 시간</span>
-이동 시간       = 왕복 이동 거리 ÷ 이동 속도
-물류 운반 시간   = 피킹 시간 + 로딩/언로딩 시간 + 이동 시간
+이동 시간       = 1회 이동거리 ÷ 1회 이동속도
+물류 운반 시간   = 피킹 시간 + 언로딩 시간 + 이동 시간
 
 <span class="com"># 일 단위 환산</span>
 일 운반 횟수     = 시간당 운반 횟수 × 일 작업 시간
-총 운반 시간     = 물류 운반 시간 × 일 운반 횟수
-일 물류 가동 시간 = 일 작업 시간 × 3600초
-물류 운반 인원   = 총 운반 시간 ÷ 일 물류 가동 시간
+일 운반 시간     = 물류 운반 시간 × 일 운반 횟수
+표준 운반 작업 시간 = 일 작업 시간 × 3600초 × 표준작업 여유율
+최종 적정 인원     = 일 운반 시간 ÷ 표준 운반 작업 시간
 
-<span class="res">최종 물류 적정 인원 = 물류 운반 인원 × 여유율</span></pre>
+<span class="res">전체 물류 적정 인원 = Item별 최종 적정 인원 합계</span></pre>
 
       <div class="example">
-        <h5>피킹 30초, 로딩/언로딩 90초, 왕복 120m, 속도 1.5m/s, 시간당 30회, 8h, 여유율 130%</h5>
-        <pre class="formula" style="margin:0;">이동 시간 = 120 ÷ 1.5 = 80초
-물류 운반 시간 = 30 + 90 + 80 = 200초
-일 운반 횟수 = 30 × 8 = 240회
-총 운반 시간 = 200 × 240 = 48,000초
-일 물류 가동 시간 = 8 × 3600 = 28,800초
-물류 운반 인원 = 48,000 ÷ 28,800 = 1.67명
-<span class="res">최종 적정 인원 = 1.67 × 130% = 2.2명</span></pre>
+        <h5>피킹 240초, 언로딩 180초, 이동거리 80m, 속도 0.9m/s, 시간당 20회, 8h, 표준작업 여유율 0.7</h5>
+        <pre class="formula" style="margin:0;">이동 시간 = 80 ÷ 0.9 = 88.9초
+물류 운반 시간 = 240 + 180 + 88.9 = 508.9초
+일 운반 횟수 = 20 × 8 = 160회
+일 운반 시간 = 508.9 × 160 = 81,422초
+표준 운반 작업 시간 = 8 × 3600 × 0.7 = 20,160초
+<span class="res">최종 적정 인원 = 81,422 ÷ 20,160 = 4.04명</span></pre>
       </div>
       <div class="note info"><span class="note-label">💡</span>휴대폰 하단 탭에서는 공간을 줄이기 위해 <b>물류인원</b>으로 표시됩니다.</div>
     </section>
@@ -1095,40 +1094,40 @@ Cycle      = 3600 ÷ 10.8 ≈ <span class="res">333 초</span>
     <section class="chapter" id="warehouse-area">
       <span class="chapter-num">CHAPTER 9</span>
       <h2 class="chapter-title">🏭 물류 창고 면적</h2>
-      <p class="chapter-lead">CMDT별 일 Max 물동, 용기 크기, 적재 수량, DIO, 창고 여유율을 기준으로 필요한 창고 면적을 m²와 평 단위로 산출합니다.</p>
+      <p class="chapter-lead">UPH 기준 또는 용기 사이즈 기준을 선택해 Item별 물류 필요 면적을 산출합니다. 참조 Excel 양식으로 일괄 입력하고 전체 필요 면적을 합산합니다.</p>
 
       <h3 id="warehouse-step"><span class="h-num">1</span>입력 절차</h3>
       <div class="steps">
         <div class="step">
           <div class="step-num">1</div>
-          <div><div class="step-title">기초 정보부터 순차 입력</div><div class="step-body">기초 정보, 용기당 면적, 적재 수량, 생산 기준 면적 순서로 입력합니다. 계산 결과 카드는 산식과 함께 확인합니다.</div></div>
+          <div><div class="step-title">기준 선택</div><div class="step-body">필요면적(UPH 기준) 또는 필요면적(용기 사이즈 기준)을 선택합니다.</div></div>
         </div>
         <div class="step">
           <div class="step-num">2</div>
-          <div><div class="step-title">DIO / 여유율 입력</div><div class="step-body">DIO(재고 일수)와 창고 여유율을 입력합니다. 예: 2.0은 통로·안전 공간을 포함한 200% 기준입니다.</div></div>
+          <div><div class="step-title">Item별 입력</div><div class="step-body">적재 Item, 적재 종류와 선택 기준에 맞는 UPH·작업 시간·수용수 또는 용기 개수·치수를 입력합니다.</div></div>
         </div>
         <div class="step">
           <div class="step-num">3</div>
-          <div><div class="step-title">합계 확인</div><div class="step-body">CMDT별 산출 면적과 전체 창고 면적(m²/평)을 확인합니다.</div></div>
+          <div><div class="step-title">합계 확인</div><div class="step-body">Item별 최종 면적과 물류 필요 면적 합계(m²)를 확인합니다.</div></div>
         </div>
       </div>
 
       <h3 id="warehouse-formula"><span class="h-num">2</span>산식 / 예시</h3>
-      <pre class="formula"><span class="com"># CMDT별 산식</span>
-용기 면적       = 용기 가로 × 용기 세로
-Total 적재 수량 = 적재 수량 × 적재 단수
-일일 Pallet 수  = 일 Max 물동 ÷ Total 적재 수량
-일일 면적       = 용기 면적 × 일일 Pallet 수
-창고 면적(m²)   = 일일 면적 × DIO × 창고 여유율
-창고 면적(평)   = 창고 면적(m²) ÷ 3.3</pre>
+      <pre class="formula"><span class="com"># UPH 기준</span>
+일 생산수량 = UPH × 작업 시간
+일 적재 수량 = 일 생산수량 ÷ 수용수
+최종 적정 면적 = (일 적재 수량 × 단위 면적 ÷ 높이) × 물류 여유율
+
+<span class="com"># 용기 사이즈 기준</span>
+바닥 적재 수량 = 가로 개수 × 세로 개수
+필요 면적 = 바닥 적재 수량 × 단위 면적 × 여유율</pre>
 
       <div class="example">
-        <h5>일 Max 500개, 용기 1.15m × 1.23m, 적재 48개 × 2단, DIO 15일, 여유율 2.0</h5>
-        <pre class="formula" style="margin:0;">용기 면적 = 1.15 × 1.23 = 1.41 m²
-Total 적재 수량 = 48 × 2 = 96개
-일일 Pallet 수 = 500 ÷ 96 = 5.21
-일일 면적 = 1.41 × 5.21 = 7.36 m²
-<span class="res">창고 면적 = 7.36 × 15 × 2.0 = 221 m² ≈ 67평</span></pre>
+        <h5>UPH 50, 작업 시간 8h, 수용수 20, 단위 면적 1.2m × 1.0m, 높이 2단, 여유율 1.2</h5>
+        <pre class="formula" style="margin:0;">일 생산수량 = 50 × 8 = 400
+일 적재 수량 = 400 ÷ 20 = 20
+단위 면적 = 1.2 × 1.0 = 1.2 m²
+<span class="res">최종 적정 면적 = (20 × 1.2 ÷ 2) × 1.2 = 14.4 m²</span></pre>
       </div>
       <div class="note info"><span class="note-label">💡</span>휴대폰 하단 탭에서는 <b>창고면적</b>으로 표시됩니다.</div>
     </section>
@@ -1187,8 +1186,8 @@ Re-Handling율 = 10 ÷ 80 × 100 = 12.5%</pre>
           <tr><td><b>7대 로스</b></td><td>7가지 운영 손실 (불량/대기/이동 등) 감안 개념</td></tr>
           <tr><td><b>AMR</b></td><td>Autonomous Mobile Robot — 자율주행 로봇</td></tr>
           <tr><td><b>AGV</b></td><td>Automated Guided Vehicle — 무인 운반차</td></tr>
-          <tr><td><b>CMDT</b></td><td>Commodity — 창고 면적 산출 시 관리하는 품목/자재 단위</td></tr>
-          <tr><td><b>DIO</b></td><td>Days Inventory Outstanding — 창고에 보유해야 하는 재고 일수</td></tr>
+          <tr><td><b>적재 Item</b></td><td>물류 인원·창고 면적 산출에서 별도로 계산하는 물류 대상 항목</td></tr>
+          <tr><td><b>최고 높이 점유율</b></td><td>최고 적재 높이 대비 실제 활용 수준을 반영하는 체적 효율 계수</td></tr>
           <tr><td><b>Re-Handling</b></td><td>입고 후 추가 재취급·재정렬·재이동이 발생하는 작업</td></tr>
           <tr><td><b>Re-Handling율</b></td><td>입고 Item 중 재취급이 발생하는 비율</td></tr>
           <tr><td><b>Spare</b></td><td>예비 대수 — 고장 대비 추가 보유</td></tr>
