@@ -316,7 +316,7 @@ export default function WarehouseArea({ data, updateData }) {
           </div>
         </div>
 
-        <div className="segmented-control" style={{ marginBottom: 12 }}>
+        <div className="segmented-control warehouse-mode-control" style={{ marginBottom: 12 }}>
           <button className={`segmented-btn ${mode === 'uph' ? 'active' : ''}`} onClick={() => setMode('uph')}>필요면적(UPH 기준)</button>
           <button className={`segmented-btn ${mode === 'container' ? 'active' : ''}`} onClick={() => setMode('container')}>필요면적(용기 사이즈 기준)</button>
         </div>

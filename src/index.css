@@ -538,6 +538,21 @@ select.input-field {
   box-shadow: var(--shadow-sm);
 }
 
+.warehouse-mode-control {
+  background: #FFF7ED;
+  border-color: #FDBA74;
+}
+
+.warehouse-mode-control .segmented-btn {
+  color: #C2410C;
+}
+
+.warehouse-mode-control .segmented-btn.active {
+  background: #C2410C;
+  color: white;
+  box-shadow: 0 4px 12px rgba(194, 65, 12, 0.22);
+}
+
 .module-action-bar {
   display: flex;
   align-items: center;
