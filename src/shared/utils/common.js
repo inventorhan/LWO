@@ -10,6 +10,18 @@ export function n(v) {
 }
 
 /**
+ * 미입력(빈 문자열/null/undefined)이면 기본값을, 그 외에는 숫자로 파싱해 반환합니다.
+ * - 명시적으로 0을 입력한 경우에는 0을 그대로 반환합니다 (n과 달리 0을 기본값으로 덮지 않음).
+ * @param {*} v - 값
+ * @param {number} fallback - 미입력 시 사용할 기본값 (기본 0)
+ */
+export function nOr(v, fallback = 0) {
+  if (v === '' || v === null || v === undefined) return fallback;
+  const p = parseFloat(v);
+  return Number.isFinite(p) ? p : fallback;
+}
+
+/**
  * 숫자를 포맷팅하여 문자열로 반환합니다.
  * @param {number} v - 값
  * @param {string} unit - 단위 (선택)

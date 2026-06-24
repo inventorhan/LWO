@@ -424,7 +424,7 @@
     <h1>LWO 물류 분석 Tool<small>사용 설명서 — 교육용 가이드북</small></h1>
     <p class="subtitle">물류 작업 최적화(Logistics Work Optimize)의 9가지 핵심 KPI를<br>휴대폰 하나로 측정·분석·시각화하는 방법</p>
     <div class="meta">
-      <span>버전 v1.2.8</span>
+      <span>버전 v1.2.9</span>
       <span>8개 메뉴와 9가지 분석</span>
       <span>처음 사용자 대상</span>
     </div>
@@ -622,7 +622,7 @@
         </div>
         <div class="step">
           <div class="step-num">2</div>
-          <div><div class="step-title">운반 종류 / 속도 / 가중치 설정</div><div class="step-body">도보(2.3 m/s) · 대차(1.8) · 파렛트(2.0) · AGV(1.5) 중 선택하면 속도가 자동 입력됩니다. 부하 가중치는 1시간 중 실제 작업 비율 (보통 0.8 = 80%).</div></div>
+          <div><div class="step-title">운반 종류 / 속도 / 가중치 / 공급횟수</div><div class="step-body">도보(2.3 m/s) · 대차(1.8) · 파렛트(2.0) · AGV(1.5) 중 선택하면 속도가 자동 입력되며, <b>운반 속도는 모든 종류에서 직접 수정</b> 가능합니다. 부하 가중치는 보통 0.8(80%). 측정 결과의 <b>시간당 공급횟수(회/h, 기본 1)</b>가 부하율 환산의 핵심입니다.</div></div>
         </div>
         <div class="step">
           <div class="step-num">3</div>
@@ -635,14 +635,18 @@
       </div>
 
       <h3 id="worker-formula"><span class="h-num">3</span>공식과 판정 기준</h3>
-      <pre class="formula"><span class="com"># 총 운반 시간</span>
-총 운반 시간 = Σ (피킹 + 이동 + 로딩/언로딩 + 회수) Gap
+      <pre class="formula"><span class="com"># 평균 1회 운반 시간 (여러 회 측정의 평균)</span>
+평균 1회 운반 시간 = Σ(피킹 + 이동 + 로딩/언로딩 + 회수) ÷ 측정 횟수
+
+<span class="com"># 시간당 점유 시간 = 평균 1회 × 시간당 공급횟수</span>
+시간당 점유 시간 = 평균 1회 운반 시간 × <span class="var">시간당 공급횟수</span>
 
 <span class="com"># 부하 가중 시간 (= 가동 가능한 최대 운반 시간)</span>
 부하 가중 시간 = 3600초 × <span class="var">부하 가중치</span>
 
 <span class="com"># 결과</span>
-<span class="res">부하율(%) = 총 운반 시간 ÷ 부하 가중 시간 × 100</span></pre>
+<span class="res">부하율(%) = 시간당 점유 시간 ÷ 부하 가중 시간 × 100</span></pre>
+      <div class="note info"><span class="note-label">💡</span>1시간 내내 측정하기 어려우므로, 몇 회 측정한 <b>평균 1회 시간</b>에 <b>시간당 공급횟수</b>를 곱해 1시간 부하율로 환산합니다. 공급횟수 미입력 시 기본 <b>1회/h</b>로 계산됩니다.</div>
 
       <table>
         <thead><tr><th>부하율</th><th>판정</th><th>대응</th></tr></thead>
@@ -666,7 +670,7 @@
 
       <h3 id="worker-example"><span class="h-num">5</span>계산 예시</h3>
       <div class="example">
-        <h5>대차 작업자 1명, 가중치 0.8 (80% 가동)</h5>
+        <h5>대차 작업자 1명, 가중치 0.8 (80% 가동), 시간당 공급횟수 6회/h</h5>
         <table style="margin: 0 0 12px;">
           <thead><tr><th>회차</th><th>피킹</th><th>이동</th><th>로딩/언로딩</th><th>회수</th><th>소계</th></tr></thead>
           <tbody>
@@ -675,10 +679,11 @@
             <tr><td>3회</td><td>38초</td><td>205초</td><td>32초</td><td>120초</td><td>395초</td></tr>
           </tbody>
         </table>
-        <pre class="formula">총 운반 시간 = 390 + 405 + 395 = 1190초
+        <pre class="formula">평균 1회 운반 시간 = (390 + 405 + 395) ÷ 3 = 396.7초
+시간당 점유 시간 = 396.7 × 6회 = 2380초
 부하 가중 시간 = 3600 × 0.8 = 2880초
-<span class="res">부하율 = 1190 ÷ 2880 × 100 ≈ 41.3%</span>
-→ <b>여유 있음.</b> 동일 작업자에게 추가 임무 배정 가능</pre>
+<span class="res">부하율 = 2380 ÷ 2880 × 100 ≈ 82.6%</span>
+→ <b>적정 부하.</b> 공급횟수가 더 늘면 인원 추가 검토</pre>
       </div>
 
       <div class="note info"><span class="note-label">💡</span>운반 종류에 없는 수단은 화면 하단 <em>운반 관리</em> 버튼으로 직접 추가 (이름·속도 입력).</div>
@@ -717,7 +722,7 @@
         </div>
         <div class="step">
           <div class="step-num">5</div>
-          <div><div class="step-title">부하 가중치 조정</div><div class="step-body">측정 결과 카드에서 0.5~1.0 사이 조정. 시나리오별 결과 비교에 유용.</div></div>
+          <div><div class="step-title">부하 가중치 / 시간당 공급횟수</div><div class="step-body">측정 결과 카드에서 가중치(0.5~1.0)와 <b>시간당 공급횟수(회/h, 기본 1)</b>를 입력. 부하율은 평균 1회 시간 × 공급횟수로 환산됩니다.</div></div>
         </div>
       </div>
 
@@ -729,9 +734,10 @@ E/V 면적     = 가로 × 세로                        [m²]
 <span class="com"># 2) 적재율</span>
 <span class="res">적재율(%) = 실 적재 ÷ E/V 면적 × 100</span>
 
-<span class="com"># 3) 부하율</span>
+<span class="com"># 3) 부하율 (평균 1회 × 시간당 공급횟수)</span>
+평균 1회 운반 시간 = Σ(로딩+이동+언로딩+회수) ÷ 측정 횟수
 부하 가중 시간 = 3600 × <span class="var">가중치</span>
-<span class="res">부하율(%)     = 총 운반 시간 ÷ 부하 가중 시간 × 100</span></pre>
+<span class="res">부하율(%) = (평균 1회 × 시간당 공급횟수) ÷ 부하 가중 시간 × 100</span></pre>
 
       <h3><span class="h-num">4</span>호기별 비교 대시보드</h3>
       <p>2대 이상 호기를 측정하면 화면 하단에 자동으로 표시됩니다:</p>
@@ -987,57 +993,56 @@ E/V 면적     = 가로 × 세로                        [m²]
     <section class="chapter" id="amr">
       <span class="chapter-num">CHAPTER 7</span>
       <h2 class="chapter-title">🤖 AMR 대수</h2>
-      <p class="chapter-lead">공장 운영에 필요한 AMR(자율주행 로봇) 대수를 산출합니다. 생산 Tact와 AMR 왕복 시간을 비교해 최소 필요 대수 + 예비를 계산.</p>
+      <p class="chapter-lead">공장 운영에 필요한 AMR(자율주행 로봇) 대수를 산출합니다. <b>여러 아이템을 여러 구역에서 공급</b>하는 경우 아이템(구역)별로 입력하면, 아이템별 원단위를 합산해 총 필요 대수 + 예비를 계산합니다.</p>
 
-      <h3 id="amr-step"><span class="h-num">1</span>3단계 입력</h3>
+      <h3 id="amr-step"><span class="h-num">1</span>입력 절차</h3>
       <div class="steps">
         <div class="step">
           <div class="step-num">1</div>
-          <div><div class="step-title">생산 수량 정보</div><div class="step-body">Tact Time(초), 회수율(%), 장입 수량(개/회). → UPH·운행 횟수·Cycle Time이 자동 산출.</div></div>
+          <div><div class="step-title">아이템(구역) 추가 / 선택</div><div class="step-body">상단 <b>아이템 탭</b>에서 선택하거나 <em>+ 아이템 추가</em>로 늘립니다. 아이템별 조건이 독립 저장되고 원단위가 합산됩니다.</div></div>
         </div>
         <div class="step">
           <div class="step-num">2</div>
-          <div><div class="step-title">AMR 운행 정보</div><div class="step-body">AMR Speed(m/s), 편도 거리(m), 로딩 횟수·시간, 언로딩 횟수·시간 → 총 왕복 시간 산출.</div></div>
+          <div><div class="step-title">생산 수량 정보</div><div class="step-body">Tact Time(초), 회수율(%), 장입 수량(개/회). → UPH·운행 횟수·Cycle Time이 자동 산출.</div></div>
         </div>
         <div class="step">
           <div class="step-num">3</div>
-          <div><div class="step-title">AMR 여유율 / 예비</div><div class="step-body">AMR 여유율(예: 1.2)과 Spare(예비 대수, 보통 1)를 입력해 최종 필요 대수를 산출합니다.</div></div>
+          <div><div class="step-title">AMR 운행 정보</div><div class="step-body">AMR Speed(m/s), 편도 거리(m), 로딩 횟수·시간, 언로딩 횟수·시간 → 총 왕복 시간 산출.</div></div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div><div class="step-title">AMR 여유율 / 예비 (전체 합산에 1회)</div><div class="step-body">AMR 여유율(예: 1.2)과 Spare(예비 대수, 보통 1)는 합산된 총 원단위에 한 번만 적용해 최종 필요 대수를 산출합니다.</div></div>
         </div>
       </div>
 
       <h3 id="amr-formula"><span class="h-num">2</span>공식 전체</h3>
-      <pre class="formula"><span class="com"># 1) 생산 수량 정보로 기준 사이클 산출</span>
+      <pre class="formula"><span class="com"># 1) 아이템(구역)별 — 기준 사이클</span>
 UPH        = (3600 ÷ Tact) × <span class="var">회수율</span>
 운행 횟수   = UPH ÷ 장입 수량
 <span class="res">Cycle Time = 3600 ÷ 운행 횟수    (한 번 왕복 안에 처리해야 할 시간)</span>
 
-<span class="com"># 2) 실제 왕복 시간</span>
+<span class="com"># 2) 아이템별 — 실제 왕복 시간 → 원단위</span>
 왕복 거리       = 편도 거리 × 2
-Total 로딩      = 로딩 횟수 × 시간
-Total 언로딩    = 언로딩 횟수 × 시간
-<span class="res">총 왕복 시간    = (왕복 거리 ÷ Speed) + Total 로딩 + Total 언로딩</span>
+총 왕복 시간    = (왕복 거리 ÷ Speed) + Total 로딩 + Total 언로딩
+<span class="res">AMR 원단위      = 총 왕복시간 ÷ Cycle</span>
 
-<span class="com"># 3) 필요 대수 (올림 = ⌈x⌉)</span>
-원단위        = 총 왕복시간 ÷ Cycle
-여유율 적용   = 원단위 × <span class="var">AMR 여유율</span>
-<span class="res">필요 대수     = ⌈ 여유율 적용 ⌉ + Spare</span></pre>
+<span class="com"># 3) 전체 합산 → 필요 대수 (올림 = ⌈x⌉)</span>
+총 원단위     = Σ 아이템별 원단위
+여유율 적용   = ⌈ 총 원단위 × <span class="var">AMR 여유율</span> ⌉
+<span class="res">필요 대수     = 여유율 적용 + Spare</span></pre>
 
       <h3 id="amr-example"><span class="h-num">3</span>상세 계산 풀이</h3>
       <div class="example">
-        <h5>Tact 60s, 회수율 90%, 장입 5개/회 / Speed 1.5m/s, 편도 60m, 로딩/언로딩 각 1회 × 15s / AMR 여유율 1.2, Spare 1</h5>
-        <pre class="formula" style="margin:0;"><span class="com"># 1) 기준</span>
-UPH        = 3600 ÷ 60 × 0.9 = <span class="res">54</span>
-운행 횟수   = 54 ÷ 5 = <span class="res">10.8 회/h</span>
-Cycle      = 3600 ÷ 10.8 ≈ <span class="res">333 초</span>
+        <h5>아이템 3개(구역별) 원단위 산출 후 합산 / AMR 여유율 1.2, Spare 1</h5>
+        <pre class="formula" style="margin:0;"><span class="com"># 아이템별 원단위 = 총 왕복시간 ÷ Cycle (각 구역 조건)</span>
+아이템1 = <span class="res">0.2 대</span>
+아이템2 = <span class="res">0.4 대</span>
+아이템3 = <span class="res">0.2 대</span>
 
-<span class="com"># 2) 왕복</span>
-왕복 거리   = 60 × 2 = 120 m
-왕복 시간   = 120 ÷ 1.5 + 15 + 15 = <span class="res">110 초</span>
-
-<span class="com"># 3) 대수 (소수 → 올림)</span>
-원단위      = 110 ÷ 333 = <span class="res">0.33 대</span>
-여유율 적용 = 0.33 × 1.2 = <span class="res">0.40 대</span>
-<span class="res">필요 대수    = ⌈ 0.40 ⌉ + 1 = 2 대</span></pre>
+<span class="com"># 합산 → 여유율 → 올림 → Spare</span>
+총 원단위   = 0.2 + 0.4 + 0.2 = <span class="res">0.8 대</span>
+여유율 적용 = ⌈ 0.8 × 1.2 ⌉ = ⌈ 0.96 ⌉ = <span class="res">1 대</span>
+<span class="res">필요 대수    = 1 + 1(Spare) = 2 대</span></pre>
       </div>
 
       <div class="note warn"><span class="note-label">⚠</span>총 왕복 시간이 Cycle Time보다 짧아야 1대로 처리됩니다. 둘 비교를 항상 확인하세요.</div>
@@ -1104,7 +1109,7 @@ Cycle      = 3600 ÷ 10.8 ≈ <span class="res">333 초</span>
         </div>
         <div class="step">
           <div class="step-num">2</div>
-          <div><div class="step-title">Item별 입력</div><div class="step-body">적재 Item, 적재 종류와 선택 기준에 맞는 UPH·작업 시간·수용수 또는 용기 개수·치수를 입력합니다.</div></div>
+          <div><div class="step-title">Item별 입력</div><div class="step-body">적재 Item·적재 종류와 함께, UPH 기준은 UPH·작업 시간·수용수·<b>용기 Size 가로/세로</b>·<b>면적 여유율</b>(프리셋 또는 직접 입력)을, 용기 기준은 용기 개수·치수를 입력합니다.</div></div>
         </div>
         <div class="step">
           <div class="step-num">3</div>
@@ -1116,18 +1121,22 @@ Cycle      = 3600 ÷ 10.8 ≈ <span class="res">333 초</span>
       <pre class="formula"><span class="com"># UPH 기준</span>
 일 생산수량 = UPH × 작업 시간
 일 적재 수량 = 일 생산수량 ÷ 수용수
-최종 적정 면적 = (일 적재 수량 × 단위 면적 ÷ 높이) × 물류 여유율
+공급 포함 적재수량 = 일 적재 수량 × 1.3 (공급버퍼 30%)
+단위 면적 = 용기 Size 가로 × 용기 Size 세로
+최종 적정 면적 = 공급 포함 적재수량 × (단위 면적 × 면적 여유율)
 
 <span class="com"># 용기 사이즈 기준</span>
 바닥 적재 수량 = 가로 개수 × 세로 개수
 필요 면적 = 바닥 적재 수량 × 단위 면적 × 여유율</pre>
+      <div class="note info"><span class="note-label">💡</span>면적 여유율 프리셋: <b>수동 대차 220% (2.2) · AMR 대차 280% (2.8) · Rack 3단 박스 84% (0.84)</b> 또는 직접 입력. 단 적재(Rack 단수 등)는 면적 여유율에 반영되므로 별도 높이 나눗셈은 없습니다.</div>
 
       <div class="example">
-        <h5>UPH 50, 작업 시간 8h, 수용수 20, 단위 면적 1.2m × 1.0m, 높이 2단, 여유율 1.2</h5>
+        <h5>UPH 50, 작업 시간 8h, 수용수 20, 용기 Size 1.2m × 1.0m, 면적 여유율 2.2 (수동 대차)</h5>
         <pre class="formula" style="margin:0;">일 생산수량 = 50 × 8 = 400
 일 적재 수량 = 400 ÷ 20 = 20
+공급 포함 적재수량 = 20 × 1.3 = 26
 단위 면적 = 1.2 × 1.0 = 1.2 m²
-<span class="res">최종 적정 면적 = (20 × 1.2 ÷ 2) × 1.2 = 14.4 m²</span></pre>
+<span class="res">최종 적정 면적 = 26 × (1.2 × 2.2) = 68.6 m²</span></pre>
       </div>
       <div class="note info"><span class="note-label">💡</span>휴대폰 하단 탭에서는 <b>창고면적</b>으로 표시됩니다.</div>
     </section>

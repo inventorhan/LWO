@@ -27,7 +27,7 @@ export function migrateLogisticsPersonnel(data = {}) {
 const createInitialWorkerData = (name) => {
   const t = Date.now()
   return {
-    basicInfo: { personnel: name, transportType: 'worker', transportQty: 1, speed: 2.3, weight: 0.8, measureCount: 1 },
+    basicInfo: { personnel: name, transportType: 'worker', transportQty: 1, speed: 2.3, weight: 0.8, measureCount: 1, supplyPerHour: 1 },
     measurements: [
       {
         id: `cycle-${t}`,
@@ -74,7 +74,7 @@ export const initialState = {
     /* 호기별 결과 비교를 위해 dataByHogi 저장 (key는 string '1'~'9') */
     dataByHogi: {
       '1': {
-        basicInfo: { weight: 0.8, evWidth: '', evDepth: '', stackLevel: 4 },
+        basicInfo: { weight: 0.8, evWidth: '', evDepth: '', stackLevel: 4, supplyPerHour: 1 },
         measurements: [createInitialElevatorMeasurement(1)],
         loadItems: [],   // E/V 적재율 계산용 박스/대차 항목
         photos: []
@@ -110,7 +110,7 @@ export const initialState = {
       '세탁기::Top Loader': { records: [] }
     }
   },
-  amr: { tactTime: '', recycleRate: '', loadQty: '', amrtSpeed: '', distance: '', loadCount: '', loadTime: '', unloadCount: '', unloadTime: '', operationRate: 1.2, spare: 1 },
+  amr: { items: [], tactTime: '', recycleRate: '', loadQty: '', amrtSpeed: '', distance: '', loadCount: '', loadTime: '', unloadCount: '', unloadTime: '', operationRate: 1.2, spare: 1 },
   logisticsPersonnel: {
     pickTime: '', loadTime: '', distance: '', speed: 1.2,
     tripsPerHour: '', hoursPerDay: 8, availability: 130, weight: 1.3
@@ -298,7 +298,7 @@ export function useAppState() {
           dataByHogi: {
             ...s.elevator.dataByHogi,
             [hogiKey]: {
-              basicInfo: { weight: 0.8, evWidth: '', evDepth: '', stackLevel: 4 },
+              basicInfo: { weight: 0.8, evWidth: '', evDepth: '', stackLevel: 4, supplyPerHour: 1 },
               measurements: [createInitialElevatorMeasurement(1)],
               loadItems: [],
               photos: []

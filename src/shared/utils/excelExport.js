@@ -1,6 +1,6 @@
 import ExcelJS from 'exceljs'
 import { saveBlob } from './saveAndShare'
-import { getGap, calcArea, n } from './common'
+import { getGap, calcArea, n, nOr } from './common'
 
 const headerStyle = {
   font: { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 },
@@ -71,7 +71,7 @@ export async function exportToExcel(state) {
       ['물류 인원', b.personnel || name],
       ['운반 종류', labelOf(b.transportType)],
       ['운반 수량', b.transportQty],
-      ['운반 속도(m/s)', b.transportType === 'other' ? b.speed : (transportTypes[b.transportType]?.speed ?? '')],
+      ['운반 속도(m/s)', (b.speed !== undefined && b.speed !== '' && b.speed !== null) ? b.speed : (transportTypes[b.transportType]?.speed ?? '')],
       ['부하 가중치', b.weight],
       ['총 측정 횟수', ms.length]
     ])
@@ -94,15 +94,23 @@ export async function exportToExcel(state) {
       })
     })
 
-    const speed = b.transportType === 'other' ? n(b.speed) : n(transportTypes[b.transportType]?.speed)
+    const speed = (b.speed !== undefined && b.speed !== '' && b.speed !== null)
+      ? n(b.speed) : n(transportTypes[b.transportType]?.speed)
     const dist = moveT * speed
     const wTime = 3600 * (n(b.weight) || 0.8)
-    const rate = wTime > 0 ? (totalT / wTime) * 100 : 0
+    /* 부하율 = 평균 1회 운반시간 × 시간당 공급횟수 ÷ 부하 가중 시간 */
+    const cycleCount = ms.length || 0
+    const avgCycleSec = cycleCount > 0 ? totalT / cycleCount : 0
+    const supplyPerHour = nOr(b.supplyPerHour, 1)
+    const hourlyBusySec = avgCycleSec * supplyPerHour
+    const rate = wTime > 0 ? (hourlyBusySec / wTime) * 100 : 0
 
     ws1.addRow([])
     applySubHeader(ws1.addRow([`[ ${name} ] 결과`]))
     ws1.addRows([
-      ['총 운반 시간(초)', totalT.toFixed(1)],
+      ['평균 1회 운반 시간(초)', avgCycleSec.toFixed(1)],
+      ['시간당 공급횟수(회/h)', supplyPerHour],
+      ['시간당 점유 시간(초)', hourlyBusySec.toFixed(1)],
       ['총 이동 거리(m)', dist.toFixed(1)],
       ['물류 부하율(%)', rate.toFixed(1)]
     ])
@@ -169,7 +177,11 @@ export async function exportToExcel(state) {
     })
 
     const evWeight = n(eb.weight) || 0.8
-    const evRate = (evTotal / (3600 * evWeight)) * 100
+    /* 부하율 = 평균 1회 운반시간 × 시간당 공급횟수 ÷ 부하 가중 시간 */
+    const evAvgCycle = cycleCount > 0 ? evTotal / cycleCount : 0
+    const evSupply = nOr(eb.supplyPerHour, 1)
+    const evHourlyBusy = evAvgCycle * evSupply
+    const evRate = (3600 * evWeight) > 0 ? (evHourlyBusy / (3600 * evWeight)) * 100 : 0
     /* 적재율 */
     const evArea = (parseFloat(eb.evWidth) || 0) * (parseFloat(eb.evDepth) || 0)  // m²
     const evStackLevel = parseFloat(eb.stackLevel) || 4
@@ -182,6 +194,9 @@ export async function exportToExcel(state) {
     ws2.addRows([
       ['측정 회수', cycleCount],
       ['총 운반 시간(초)', evTotal.toFixed(1)],
+      ['평균 1회 운반 시간(초)', evAvgCycle.toFixed(1)],
+      ['시간당 공급횟수(회/h)', evSupply],
+      ['시간당 점유 시간(초)', evHourlyBusy.toFixed(1)],
       ['이동 시간(초)', evMove.toFixed(1)],
       ['E/V 부하율(%)', evRate.toFixed(1)],
       ['E/V 면적(m²)', evArea.toFixed(1)],
@@ -354,52 +369,58 @@ export async function exportToExcel(state) {
   ]
   styleHeaderRow(ws5.getRow(1))
   const am = state.amr || {}
-  const uph = n(am.tactTime) > 0 ? (3600 / n(am.tactTime)) * (n(am.recycleRate) / 100) : 0
-  const runCount = n(am.loadQty) > 0 ? uph / n(am.loadQty) : 0
-  const cycle = runCount > 0 ? 3600 / runCount : 0
-  const round = n(am.distance) * 2
-  const lSec = n(am.loadCount) * n(am.loadTime)
-  const uSec = n(am.unloadCount) * n(am.unloadTime)
-  const trip = n(am.amrtSpeed) > 0 ? (round / n(am.amrtSpeed)) + lSec + uSec : 0
-  const baseRaw = cycle > 0 ? trip / cycle : 0
-  const base = baseRaw > 0 ? Math.ceil(baseRaw) : 0
-  const margin = n(am.operationRate) || 1.2
-  const adjustedRaw = baseRaw * margin
-  const adjusted = adjustedRaw > 0 ? Math.ceil(adjustedRaw) : 0
-  const need = adjusted + n(am.spare)
+  const amrItems = am.items?.length ? am.items : [{
+    itemName: '',
+    tactTime: am.tactTime, recycleRate: am.recycleRate, loadQty: am.loadQty,
+    amrtSpeed: am.amrtSpeed, distance: am.distance,
+    loadCount: am.loadCount, loadTime: am.loadTime, unloadCount: am.unloadCount, unloadTime: am.unloadTime
+  }]
+  const calcAmrItem = (it) => {
+    const uph = n(it.tactTime) > 0 ? (3600 / n(it.tactTime)) * (n(it.recycleRate) / 100) : 0
+    const runCount = n(it.loadQty) > 0 ? uph / n(it.loadQty) : 0
+    const cycle = runCount > 0 ? 3600 / runCount : 0
+    const round = n(it.distance) * 2
+    const lSec = n(it.loadCount) * n(it.loadTime)
+    const uSec = n(it.unloadCount) * n(it.unloadTime)
+    const trip = n(it.amrtSpeed) > 0 ? (round / n(it.amrtSpeed)) + lSec + uSec : 0
+    const baseRaw = cycle > 0 ? trip / cycle : 0
+    return { uph, runCount, cycle, round, lSec, uSec, trip, baseRaw }
+  }
+  const amrCalcs = amrItems.map(calcAmrItem)
+  const totalBaseRaw = amrCalcs.reduce((s, c) => s + c.baseRaw, 0)
+  const amrMargin = n(am.operationRate) || 1.2
+  const amrAdjustedRaw = totalBaseRaw * amrMargin
+  const amrAdjusted = amrAdjustedRaw > 0 ? Math.ceil(amrAdjustedRaw) : 0
+  const amrNeed = amrAdjusted + n(am.spare)
 
-  applySubHeader(ws5.addRow(['생산 정보']))
-  ws5.addRows([
-    ['Tact Time(초)', am.tactTime],
-    ['회수율(%)', am.recycleRate],
-    ['장입 수량(개/회)', am.loadQty],
-    ['UPH (자동)', uph.toFixed(1)],
-    ['AMR 운행 횟수', runCount.toFixed(2)],
-    ['AMR Cycle Time(초)', cycle.toFixed(1)]
-  ])
+  amrItems.forEach((it, idx) => {
+    const c = amrCalcs[idx]
+    if (idx > 0) ws5.addRow([])
+    applySubHeader(ws5.addRow([`[ ${it.itemName || `아이템-${idx + 1}`} ] 생산·운행`]))
+    ws5.addRows([
+      ['Tact Time(초)', it.tactTime],
+      ['회수율(%)', it.recycleRate],
+      ['장입 수량(개/회)', it.loadQty],
+      ['UPH (자동)', c.uph.toFixed(1)],
+      ['AMR 운행 횟수', c.runCount.toFixed(2)],
+      ['AMR Cycle Time(초)', c.cycle.toFixed(1)],
+      ['AMR Speed(m/s)', it.amrtSpeed],
+      ['AMR 이동거리(m)', it.distance],
+      ['왕복 이동거리(m)', c.round.toFixed(1)],
+      ['Total 로딩 시간(초)', c.lSec.toFixed(1)],
+      ['Total 언로딩 시간(초)', c.uSec.toFixed(1)],
+      ['왕복 시간(초)', c.trip.toFixed(1)],
+      ['AMR 원단위(대)', c.baseRaw.toFixed(2)]
+    ])
+  })
   ws5.addRow([])
-  applySubHeader(ws5.addRow(['운행 산출']))
+  applySubHeader(ws5.addRow(['필요 대수 (전체 합산)']))
   ws5.addRows([
-    ['AMR Speed(m/s)', am.amrtSpeed],
-    ['AMR 이동거리(m)', am.distance],
-    ['왕복 이동거리(m)', round.toFixed(1)],
-    ['로딩 횟수', am.loadCount],
-    ['로딩 시간(초/회)', am.loadTime],
-    ['Total 로딩 시간(초)', lSec.toFixed(1)],
-    ['언로딩 횟수', am.unloadCount],
-    ['언로딩 시간(초/회)', am.unloadTime],
-    ['Total 언로딩 시간(초)', uSec.toFixed(1)],
-    ['왕복 시간(초)', trip.toFixed(1)],
-    ['왕복 시간(분)', (trip / 60).toFixed(2)]
-  ])
-  ws5.addRow([])
-  applySubHeader(ws5.addRow(['필요 대수']))
-  ws5.addRows([
-    ['AMR 여유율', margin],
+    ['총 원단위(대)', totalBaseRaw.toFixed(2)],
+    ['AMR 여유율', amrMargin],
     ['Spare(대)', am.spare],
-    ['AMR 원단위(대)', `${baseRaw.toFixed(2)} → ${base}`],
-    ['여유율 적용 AMR 수량(대)', `${adjustedRaw.toFixed(2)} → ${adjusted}`],
-    ['⭐ AMR 필요 대수(대)', need]
+    ['여유율 적용 AMR 수량(대)', `${amrAdjustedRaw.toFixed(2)} → ${amrAdjusted}`],
+    ['⭐ AMR 필요 대수(대)', amrNeed]
   ])
 
   /* ─── 6. 실적 기준 적정 재고 (통계 분석) ─── */
@@ -568,14 +589,15 @@ export async function exportToExcel(state) {
   if (uphItems.length || containerItems.length) {
     if (uphItems.length) {
       applySubHeader(ws8.addRow(['UPH 기준']))
-      ws8.addRow(['적재 Item', '적재 종류', 'UPH', '작업 시간', '수용수', '가로', '세로', '높이(단)', '여유율', '최종 적정 면적']).eachCell(c => c.style = labelStyle)
+      ws8.addRow(['적재 Item', '적재 종류', 'UPH', '작업 시간', '수용수', '용기 Size 가로', '용기 Size 세로', '공급 포함 적재수량', '면적 여유율', '최종 적정 면적']).eachCell(c => c.style = labelStyle)
       uphItems.forEach(item => {
         const dailyQty = n(item.uph) * n(item.hours)
         const dailyLoadQty = n(item.capacity) > 0 ? dailyQty / n(item.capacity) : 0
+        const effectiveQty = dailyLoadQty * 1.3
         const unitArea = n(item.length) * n(item.width)
-        const finalArea = (dailyLoadQty * unitArea / (n(item.stackLevel) || 1)) * (n(item.margin) || 1)
+        const finalArea = effectiveQty * (unitArea * (n(item.margin) || 1))
         whM2 += finalArea
-        ws8.addRow([item.itemName, item.warehouseType, n(item.uph), n(item.hours), n(item.capacity), n(item.length), n(item.width), n(item.stackLevel) || 1, n(item.margin) || 1, finalArea.toFixed(1)])
+        ws8.addRow([item.itemName, item.warehouseType, n(item.uph), n(item.hours), n(item.capacity), n(item.length), n(item.width), effectiveQty.toFixed(1), n(item.margin) || 1, finalArea.toFixed(1)])
       })
     }
     if (containerItems.length) {

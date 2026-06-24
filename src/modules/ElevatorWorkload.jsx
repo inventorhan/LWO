@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { getGap } from '../shared/utils/common'
+import { getGap, nOr } from '../shared/utils/common'
 import TimerSection from '../shared/components/TimerSection'
 import PhotoSection from '../shared/components/PhotoSection'
 import HelpHint, { HintFormula, HintNote } from '../shared/components/HelpHint'
@@ -93,7 +93,12 @@ export default function ElevatorWorkload({
       .reduce((cs, c) => cs + (parseFloat(getGap(c.start, c.end)) || 0), 0) || 0), 0)
   const weight = parseFloat(basicInfo.weight) || 0.8
   const weightedTime = 3600 * weight
-  const workloadRate = weightedTime > 0 ? ((totalTransportSec / weightedTime) * 100) : 0
+  /* 부하율 = 평균 1회 운반시간 × 시간당 공급횟수 ÷ 부하 가중 시간 */
+  const cycleCount = measurements.length || 0
+  const avgCycleSec = cycleCount > 0 ? totalTransportSec / cycleCount : 0
+  const supplyPerHour = nOr(basicInfo.supplyPerHour, 1)   /* 미입력 시 기본 1회/h */
+  const hourlyBusySec = avgCycleSec * supplyPerHour
+  const workloadRate = weightedTime > 0 ? ((hourlyBusySec / weightedTime) * 100) : 0
 
   /* ── E/V 면적·적재율 계산 (단위: m) ── */
   const evAreaM2 = (parseFloat(basicInfo.evWidth) || 0) * (parseFloat(basicInfo.evDepth) || 0)
@@ -109,6 +114,7 @@ export default function ElevatorWorkload({
   /* ── 호기별 통계 (대시보드) ── */
   const hogiStats = Object.entries(data.dataByHogi || {}).map(([k, h]) => {
     const ms = h.measurements || []
+    const cycleCnt = ms.length || 1
     let loadT = 0, moveT2 = 0, unloadT = 0, recoverT = 0
     ms.forEach(m => m.cards?.forEach(c => {
       const g = parseFloat(getGap(c.start, c.end)) || 0
@@ -119,7 +125,11 @@ export default function ElevatorWorkload({
     }))
     const totalT = loadT + moveT2 + unloadT + recoverT
     const wgt = parseFloat(h.basicInfo?.weight) || 0.8
-    const wlRate = (3600 * wgt) > 0 ? (totalT / (3600 * wgt) * 100) : 0
+    const capacityT = 3600 * wgt
+    /* 부하율: 평균 1회 시간 × 시간당 공급횟수 기준 */
+    const supply = nOr(h.basicInfo?.supplyPerHour, 1)   /* 미입력 시 기본 1회/h */
+    const avgCycle = totalT / cycleCnt
+    const wlRate = capacityT > 0 ? (avgCycle * supply / capacityT * 100) : 0
     return { hogi: parseInt(k), totalT, loadT, moveT2, unloadT, recoverT, wlRate }
   }).sort((a, b) => a.hogi - b.hogi)
 
@@ -283,30 +293,40 @@ export default function ElevatorWorkload({
           onClick={addElevatorLoadItem}>＋ 적재 항목 추가</button>
       </div>
 
-      {/* 측정 결과 (누적 합산) */}
+      {/* 측정 결과 (평균 1회 × 시간당 공급횟수) */}
       <div className="section-card">
         <div className="section-title">
-          측정 결과 <span className="sub-title">| 누적 합산 ({measurements.length}회)</span>
+          측정 결과 <span className="sub-title">| 평균 1회 측정 × 시간당 공급횟수 ({measurements.length}회 측정)</span>
           <HelpHint title="측정 결과">
-            <p>해당 호기의 모든 회차 측정값을 합산해 자동 산출됩니다.</p>
-            <HintFormula>{`총 운반 시간 = Σ (로딩+이동+언로딩+회수)
-부하 가중치 (0.5~1.0) 선택 가능
-부하율(%) = 총 운반 시간 ÷ (3600 × 가중치) × 100`}</HintFormula>
+            <p>1시간 내내 측정하기 어렵기 때문에, <b>몇 회 측정한 평균 1회 운반 시간</b>에
+              <b> 시간당 공급횟수</b>를 곱해 1시간 부하율을 환산합니다.</p>
+            <HintFormula>{`평균 1회 운반 시간 = Σ(로딩+이동+언로딩+회수) ÷ 측정 횟수
+시간당 점유 시간 = 평균 1회 운반 시간 × 시간당 공급횟수
+부하율(%) = 시간당 점유 시간 ÷ (3600 × 가중치) × 100`}</HintFormula>
             <p><b>판정 기준</b>: ~70% 여유 / 70~90% 적정 / 90% 초과 과부하</p>
-            <HintNote type="ok">가중치 셀렉터를 즉시 조정해 다양한 시나리오의 부하율을 비교할 수 있습니다.</HintNote>
+            <HintNote type="ok">원단위 기준 시간당 공급횟수를 입력해야 부하율이 계산됩니다.</HintNote>
           </HelpHint>
         </div>
         <div className="input-grid">
-          <div className="input-group full-width">
+          <div className="input-group">
             <div className="input-label-row"><span className="input-label">E/V 부하 가중치 (0~1)</span></div>
             <select className="input-field" value={basicInfo.weight ?? 0.8}
               onChange={e => updateElevatorBasic({ weight: parseFloat(e.target.value) })}>
               {WEIGHT_OPTIONS.map(w => <option key={w} value={w}>{w.toFixed(1)}</option>)}
             </select>
           </div>
+          <div className="input-group">
+            <div className="input-label-row"><span className="input-label">시간당 공급횟수 (회/h)</span></div>
+            <input className="input-field" type="number" step="0.1" min={0} value={basicInfo.supplyPerHour ?? 1}
+              onChange={e => updateElevatorBasic({ supplyPerHour: e.target.value })} placeholder="원단위 기준 1시간당 공급 횟수 (기본 1)" />
+          </div>
           <div className="result-box tone-final">
-            <span className="result-box__label">총 운반 시간</span>
-            <span className="result-box__value">{totalTransportSec.toFixed(1)}초</span>
+            <span className="result-box__label">평균 1회 운반 시간</span>
+            <span className="result-box__value">{avgCycleSec.toFixed(1)}초</span>
+          </div>
+          <div className="result-box tone-blue">
+            <span className="result-box__label">시간당 점유 시간 = 평균 1회 × 공급횟수</span>
+            <span className="result-box__value">{hourlyBusySec.toFixed(1)}초</span>
           </div>
           <div className="result-box tone-blue">
             <span className="result-box__label">누적 이동 시간</span>
@@ -316,7 +336,7 @@ export default function ElevatorWorkload({
             <span className="result-box__label">부하 가중 시간 = 3600 × {weight}</span>
             <span className="result-box__value">{weightedTime.toFixed(0)}초</span>
           </div>
-          <div className="result-box tone-final">
+          <div className="result-box full-width tone-final">
             <span className="result-box__label">E/V 부하율</span>
             <span className="result-box__value">{workloadRate.toFixed(1)}%</span>
           </div>

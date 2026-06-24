@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { getGap } from '../shared/utils/common'
+import { getGap, nOr } from '../shared/utils/common'
 import TimerSection from '../shared/components/TimerSection'
 import PhotoSection from '../shared/components/PhotoSection'
 import HelpHint, { HintFormula, HintNote } from '../shared/components/HelpHint'
@@ -168,49 +168,63 @@ export default function WorkerWorkload({
     }, 0) || 0), 0)
 
   const selectedTransport = transportTypes[basicInfo.transportType] || { speed: 0 }
-  const speed = basicInfo.transportType === 'other'
+  const defaultSpeed = parseFloat(selectedTransport.speed) || 0
+  /* 운반 속도는 모든 운반 종류에서 직접 수정 가능 — 입력값이 있으면 우선, 없으면 종류 기본속도 */
+  const speed = (basicInfo.speed !== undefined && basicInfo.speed !== '' && basicInfo.speed !== null)
     ? (parseFloat(basicInfo.speed) || 0)
-    : (parseFloat(selectedTransport.speed) || 0)
+    : defaultSpeed
 
   const totalDistance = speed > 0 ? (totalMovingSec * speed) : 0
   const weight = parseFloat(basicInfo.weight) || 0.8
   const weightedTime = 3600 * weight
-  const workloadRate = weightedTime > 0 ? ((totalTransportSec / weightedTime) * 100) : 0
+
+  /* 부하율 = 평균 1회 운반시간 × 시간당 공급횟수 ÷ 부하 가중 시간 */
+  const cycleCount = measurements.length || 0
+  const avgCycleSec = cycleCount > 0 ? totalTransportSec / cycleCount : 0
+  const supplyPerHour = nOr(basicInfo.supplyPerHour, 1)   /* 미입력 시 기본 1회/h */
+  const hourlyBusySec = avgCycleSec * supplyPerHour
+  const workloadRate = weightedTime > 0 ? ((hourlyBusySec / weightedTime) * 100) : 0
 
   /* 다른 인원 통계 (대시보드) — chartMode에 따라 누적/평균 */
   const workerStats = (personnelList || []).map(name => {
     const pData = dataByPersonnel[name] || {}
     const bInfo = pData.basicInfo || {}
     const meas = pData.measurements || []
-    const cycleCount = meas.length || 1
-    let pickT = 0, moveT = 0, loadT = 0, recoverT = 0
+    const cycleCnt = meas.length || 1
+    let pickSum = 0, moveSum = 0, loadSum = 0, recoverSum = 0
     meas.forEach(m => m.cards?.forEach(c => {
       const g = parseFloat(getGap(c.start, c.end)) || 0
-      if (c.type === 'pick') pickT += g
-      else if (c.type === 'move') moveT += g
-      else if (c.type === 'load') loadT += g
-      else if (c.type === 'recovery') recoverT += g
+      if (c.type === 'pick') pickSum += g
+      else if (c.type === 'move') moveSum += g
+      else if (c.type === 'load') loadSum += g
+      else if (c.type === 'recovery') recoverSum += g
     }))
-    /* chartMode: total=누적 / avg=회당 평균 */
-    const div = chartMode === 'avg' ? cycleCount : 1
-    pickT /= div; moveT /= div; loadT /= div; recoverT /= div
+    /* 표시용 시간/거리: chartMode total=누적 / avg=회당 평균 */
+    const div = chartMode === 'avg' ? cycleCnt : 1
+    const pickT = pickSum / div, moveT = moveSum / div, loadT = loadSum / div, recoverT = recoverSum / div
     const totalT = pickT + moveT + loadT + recoverT
     const tType = bInfo.transportType || 'worker'
-    const uSpeed = tType === 'other' ? (parseFloat(bInfo.speed) || 0) : (transportTypes[tType]?.speed || 0)
+    const defSpd = parseFloat(transportTypes[tType]?.speed) || 0
+    const uSpeed = (bInfo.speed !== undefined && bInfo.speed !== '' && bInfo.speed !== null)
+      ? (parseFloat(bInfo.speed) || 0) : defSpd
     const dist = (moveT + recoverT) * uSpeed
     const wght = parseFloat(bInfo.weight) || 0.8
     const capacityT = 3600 * wght
-    const wlRate = capacityT > 0 ? (totalT / capacityT) * 100 : 0
+    /* 부하율: chartMode 무관 — 평균 1회 시간 × 시간당 공급횟수 기준 */
+    const supply = nOr(bInfo.supplyPerHour, 1)   /* 미입력 시 기본 1회/h */
+    const avgPick = pickSum / cycleCnt, avgMove = moveSum / cycleCnt, avgLoad = loadSum / cycleCnt, avgRecover = recoverSum / cycleCnt
+    const avgTotal = avgPick + avgMove + avgLoad + avgRecover
+    const wlRate = capacityT > 0 ? (avgTotal * supply / capacityT) * 100 : 0
     return {
       name, totalT, dist, wlRate: Math.round(wlRate * 10) / 10,
       details: {
         pickT, moveT, loadT, recoverT,
         moveDist: moveT * uSpeed,
         recoverDist: recoverT * uSpeed,
-        pickRate: capacityT > 0 ? (pickT / capacityT) * 100 : 0,
-        moveRate: capacityT > 0 ? (moveT / capacityT) * 100 : 0,
-        loadRate: capacityT > 0 ? (loadT / capacityT) * 100 : 0,
-        recoverRate: capacityT > 0 ? (recoverT / capacityT) * 100 : 0
+        pickRate: capacityT > 0 ? (avgPick * supply / capacityT) * 100 : 0,
+        moveRate: capacityT > 0 ? (avgMove * supply / capacityT) * 100 : 0,
+        loadRate: capacityT > 0 ? (avgLoad * supply / capacityT) * 100 : 0,
+        recoverRate: capacityT > 0 ? (avgRecover * supply / capacityT) * 100 : 0
       }
     }
   }).filter(w => w.name)
@@ -363,7 +377,11 @@ export default function WorkerWorkload({
               <button className="mini-btn" onClick={() => setIsTransportManagerOpen(true)}>운반관리</button>
             </div>
             <select className="input-field" value={basicInfo.transportType || 'worker'}
-              onChange={e => setBasicInfo({ transportType: e.target.value })}>
+              onChange={e => {
+                const newType = e.target.value
+                const def = parseFloat(transportTypes[newType]?.speed) || 0
+                setBasicInfo({ transportType: newType, speed: def })
+              }}>
               {Object.entries(transportTypes).map(([id, t]) => (
                 <option key={id} value={id}>{t.label} ({t.speed} m/s)</option>
               ))}
@@ -378,8 +396,8 @@ export default function WorkerWorkload({
 
           <div className="input-group">
             <div className="input-label-row"><span className="input-label">운반 속도 (m/s)</span></div>
-            <input className="input-field" type="number" step="0.1" min={0} value={speed}
-              readOnly={basicInfo.transportType !== 'other'}
+            <input className="input-field" type="number" step="0.1" min={0}
+              value={basicInfo.speed ?? defaultSpeed}
               onChange={e => setBasicInfo({ speed: e.target.value })} />
           </div>
 
@@ -398,28 +416,39 @@ export default function WorkerWorkload({
         </div>
       </div>
 
-      {/* 측정 결과 (누적 합산) */}
+      {/* 측정 결과 (평균 1회 × 시간당 공급횟수) */}
       <div className="section-card">
         <div className="section-title">
-          측정 결과 <span className="sub-title">| 전체 누적 합산</span>
+          측정 결과 <span className="sub-title">| 평균 1회 측정 × 시간당 공급횟수</span>
           <HelpHint title="측정 결과">
-            <p>모든 회차의 시간 데이터를 합산해 자동으로 산출되는 결과입니다.</p>
-            <HintFormula>{`총 운반 시간 = Σ (피킹+이동+로딩/언로딩+회수) Gap
+            <p>1시간 내내 측정하기 어렵기 때문에, <b>몇 회 측정한 평균 1회 운반 시간</b>에
+              <b> 시간당 공급횟수</b>를 곱해 1시간 부하율을 환산합니다.</p>
+            <HintFormula>{`평균 1회 운반 시간 = Σ(피킹+이동+로딩/언로딩+회수) ÷ 측정 횟수
+시간당 점유 시간 = 평균 1회 운반 시간 × 시간당 공급횟수
 부하 가중 시간 = 3600초 × 가중치
-물류 부하율(%) = 총 운반 시간 ÷ 가중 시간 × 100`}</HintFormula>
+물류 부하율(%) = 시간당 점유 시간 ÷ 가중 시간 × 100`}</HintFormula>
             <p><b>판정 기준</b>:</p>
             <ul style={{ paddingLeft: 18, margin: '4px 0' }}>
               <li>~70% (녹색): 여유</li>
               <li>70~90% (앰버): 적정</li>
               <li>90% 초과 (짙은 앰버): 과부하 → 인원 추가 / 동선 단축 검토</li>
             </ul>
-            <HintNote type="ok">3~5회 측정 후 안정된 평균값을 사용하세요.</HintNote>
+            <HintNote type="ok">원단위 기준 시간당 공급횟수를 입력해야 부하율이 계산됩니다.</HintNote>
           </HelpHint>
         </div>
         <div className="input-grid">
+          <div className="input-group full-width">
+            <div className="input-label-row"><span className="input-label">시간당 공급횟수 (회/h)</span></div>
+            <input className="input-field" type="number" step="0.1" min={0} value={basicInfo.supplyPerHour ?? 1}
+              onChange={e => setBasicInfo({ supplyPerHour: e.target.value })} placeholder="원단위 기준 1시간당 공급 횟수 (기본 1)" />
+          </div>
           <div className="result-box tone-final">
-            <span className="result-box__label">총 운반 시간 (피킹+이동+로딩/언로딩+회수)</span>
-            <span className="result-box__value">{totalTransportSec.toFixed(1)}초</span>
+            <span className="result-box__label">평균 1회 운반 시간 (피킹+이동+로딩/언로딩+회수)</span>
+            <span className="result-box__value">{avgCycleSec.toFixed(1)}초</span>
+          </div>
+          <div className="result-box tone-blue">
+            <span className="result-box__label">시간당 점유 시간 = 평균 1회 × 공급횟수</span>
+            <span className="result-box__value">{hourlyBusySec.toFixed(1)}초</span>
           </div>
           <div className="result-box tone-blue">
             <span className="result-box__label">총 이동거리 (이동+회수)</span>
@@ -651,7 +680,7 @@ export default function WorkerWorkload({
                 const totalColor = w.wlRate > 90 ? COLORS.recovery : w.wlRate > 70 ? COLORS.load : COLORS.move
                 return (
                   <div key={w.isAverage ? 'avg-workload' : `${w.name}-${i}`} style={{ flex: w.isAverage ? '0 0 48px' : 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: `${heightPct}%`, position: 'relative', minWidth: 0 }}>
-                    <div style={{ fontSize: '0.7rem', fontWeight: 800, position: 'absolute', top: -22, color: w.isAverage ? 'var(--color-primary-dark)' : totalColor }}>{w.wlRate.toFixed(0)}%</div>
+                    <div style={{ fontSize: '0.7rem', fontWeight: 800, position: 'absolute', top: -22, color: w.isAverage ? 'var(--color-primary-dark)' : totalColor }}>{w.wlRate.toFixed(1)}%</div>
                     <div style={{ width: '100%', maxWidth: 36, height: '100%', display: 'flex', flexDirection: 'column-reverse', borderRadius: '4px 4px 0 0', overflow: 'hidden', border: `1px solid ${totalColor}33`, background: '#F4EFF1', outline: w.isAverage ? '2px solid var(--color-primary-soft)' : 'none' }}>
                       {renderSegment(w.details.pickRate, w.wlRate, COLORS.pick, '피킹', '%')}
                       {renderSegment(w.details.moveRate, w.wlRate, COLORS.move, '이동', '%')}

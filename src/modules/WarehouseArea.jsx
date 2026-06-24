@@ -6,6 +6,16 @@ import HelpHint, { HintFormula, HintNote } from '../shared/components/HelpHint'
 
 const WAREHOUSE_TYPES = ['Rack', 'Pallet', '대차', 'BOX', '기타']
 
+/* 면적 여유율 프리셋 (배수). 220% = 2.2 */
+const MARGIN_PRESETS = [
+  { label: '수동 대차', value: 2.2 },
+  { label: 'AMR 대차', value: 2.8 },
+  { label: 'Rack 3단 박스', value: 0.84 }
+]
+
+/* 일 적재수량에 더하는 공급 버퍼 비율 (30%) */
+const SUPPLY_BUFFER_RATE = 0.3
+
 const newUphItem = () => ({
   id: `whu-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
   itemName: '',
@@ -73,10 +83,12 @@ const excelCellText = (value) => {
 const calcUph = (item) => {
   const dailyQty = n(item.uph) * n(item.hours)
   const dailyLoadQty = n(item.capacity) > 0 ? dailyQty / n(item.capacity) : 0
+  /* 공급 버퍼(30%)를 더한 적재 수량 */
+  const effectiveQty = dailyLoadQty * (1 + SUPPLY_BUFFER_RATE)
   const unitArea = n(item.length) * n(item.width)
-  const totalArea = dailyLoadQty * unitArea
-  const finalArea = (n(item.stackLevel) || 1) > 0 ? (totalArea / (n(item.stackLevel) || 1)) * (n(item.margin) || 1) : 0
-  return { dailyQty, dailyLoadQty, unitArea, totalArea, finalArea }
+  /* 최종 적정 면적 = [일적재수 + 공급버퍼] × [단위면적 × 면적여유율] */
+  const finalArea = effectiveQty * (unitArea * (n(item.margin) || 1))
+  return { dailyQty, dailyLoadQty, effectiveQty, unitArea, finalArea }
 }
 
 const calcContainer = (item) => {
@@ -125,8 +137,8 @@ async function downloadTemplate(mode) {
   const workbook = new ExcelJS.Workbook()
   const ws = workbook.addWorksheet(mode === 'uph' ? '사용면적(UPH 기준)' : '사용면적(개선단계)')
   if (mode === 'uph') {
-    ws.getRow(3).values = ['', '순서', '적재 Item', '적재 종류', 'UPH', '작업 시간', '일 생산수량', '수용수', '일 적재 수량', '가로', '세로', '면적', '총면적', '높이(단)', '물류 여유율', '최종 적정 면적']
-    ws.addRow(['', 1, 'Lotte(BW)', 'RACK', 300, 8, '', 50, '', 1.2, 1.5, '', '', 3, 1.2, ''])
+    ws.getRow(3).values = ['', '순서', '적재 Item', '적재 종류', 'UPH', '작업 시간', '일 생산수량', '수용수', '일 적재 수량', '용기 Size 가로', '용기 Size 세로', '면적', '총면적', '높이(단)', '면적 여유율', '최종 적정 면적']
+    ws.addRow(['', 1, 'Lotte(BW)', 'RACK', 300, 8, '', 50, '', 1.2, 1.5, '', '', 3, 2.2, ''])
   } else {
     ws.getRow(4).values = ['', '순서', '적재 ITEM', '적재 종류', 'UPH', '일 생산수량', '가로 개수', '세로 개수', '높이', '바닥 적재 수량', '가로 길이', '세로 길이', '단위 면적', '여유율', '필요 면적(㎡)']
     ws.addRow(['', 1, 'Lotte(BW)', 'RACK', 300, 2400, 4, 4, 3, '', 1.2, 1.5, '', 1.2, ''])
@@ -239,6 +251,8 @@ export default function WarehouseArea({ data, updateData }) {
   const fallback = mode === 'uph' ? (legacyItems.length ? legacyItems : [defaultUphItem]) : [defaultContainerItem]
   const items = data?.[key]?.length ? data[key] : fallback
   const [activeIdx, setActiveIdx] = useState(0)
+  /* '직접 입력' 모드로 전환한 아이템 id 집합 (값이 프리셋과 같아도 입력칸 유지) */
+  const [customMarginIds, setCustomMarginIds] = useState(() => new Set())
   const safeIdx = Math.min(activeIdx, Math.max(0, items.length - 1))
   const active = items[safeIdx]
 
@@ -282,6 +296,11 @@ export default function WarehouseArea({ data, updateData }) {
   const totals = items.reduce((sum, item) => sum + (mode === 'uph' ? calcUph(item).finalArea : calcContainer(item).finalArea), 0)
   const calc = active ? (mode === 'uph' ? calcUph(active) : calcContainer(active)) : null
 
+  /* UPH 모드 면적 여유율: 프리셋 일치 여부 (불일치하거나 직접입력 모드면 입력칸 노출) */
+  const uphMarginVal = active ? n(active.margin) : 0
+  const uphMarginIsPreset = MARGIN_PRESETS.some(p => p.value === uphMarginVal)
+  const uphMarginCustom = active ? (customMarginIds.has(active.id) || !uphMarginIsPreset) : false
+
   return (
     <div style={{ animation: 'fadeIn 0.3s ease' }}>
       <div className="module-title">물류 창고 면적 산출</div>
@@ -295,8 +314,9 @@ export default function WarehouseArea({ data, updateData }) {
               <HintFormula>{`[UPH 기준]
 일 생산수량 = UPH × 작업 시간
 일 적재 수량 = 일 생산수량 ÷ 수용수
-단위 면적 = 가로 × 세로
-최종 적정 면적 = (일 적재 수량 × 단위 면적 ÷ 높이) × 물류 여유율
+공급 포함 적재수량 = 일 적재 수량 × 1.3 (공급버퍼 30%)
+단위 면적 = 용기 Size 가로 × 용기 Size 세로
+최종 적정 면적 = 공급 포함 적재수량 × (단위 면적 × 면적 여유율)
 
 [용기 사이즈 기준]
 바닥 적재 수량 = 가로 개수 × 세로 개수
@@ -379,25 +399,40 @@ export default function WarehouseArea({ data, updateData }) {
               <div className="warehouse-group">
                 <div className="warehouse-group__title">최종 적정 면적</div>
                 <div className="warehouse-row">
-                  <WarehouseField label="가로">
+                  <WarehouseField label="용기 Size 가로">
                     <input className="input-field" type="number" min={0} step="0.01" value={active.length}
                       onChange={e => updateItem(active.id, { length: e.target.value })} />
                   </WarehouseField>
-                  <WarehouseField label="세로">
+                  <WarehouseField label="용기 Size 세로">
                     <input className="input-field" type="number" min={0} step="0.01" value={active.width}
                       onChange={e => updateItem(active.id, { width: e.target.value })} />
                   </WarehouseField>
-                  <WarehouseField label="높이(단)">
-                    <input className="input-field" type="number" min={1} value={active.stackLevel}
-                      onChange={e => updateItem(active.id, { stackLevel: e.target.value })} />
-                  </WarehouseField>
-                  <WarehouseField label="면적 여유율">
-                    <input className="input-field" type="number" min={0} step="0.1" value={active.margin}
-                      onChange={e => updateItem(active.id, { margin: e.target.value })} />
+                  <WarehouseField label="면적 여유율 (용기 단위)">
+                    <select className="input-field"
+                      value={uphMarginCustom ? 'custom' : String(uphMarginVal)}
+                      onChange={e => {
+                        if (e.target.value === 'custom') {
+                          setCustomMarginIds(prev => new Set(prev).add(active.id))
+                        } else {
+                          setCustomMarginIds(prev => { const next = new Set(prev); next.delete(active.id); return next })
+                          updateItem(active.id, { margin: parseFloat(e.target.value) })
+                        }
+                      }}>
+                      {MARGIN_PRESETS.map(p => (
+                        <option key={p.label} value={p.value}>{p.label} ({Math.round(p.value * 100)}%)</option>
+                      ))}
+                      <option value="custom">직접 입력</option>
+                    </select>
+                    {uphMarginCustom && (
+                      <input className="input-field" type="number" min={0} step="0.01" value={active.margin}
+                        onChange={e => updateItem(active.id, { margin: e.target.value })}
+                        placeholder="배수 (예: 2.2 = 220%)" style={{ marginTop: 6 }} />
+                    )}
                   </WarehouseField>
                 </div>
-                <WarehouseResult label="단위 면적 = 가로 × 세로" value={fmtN(calc.unitArea, ' m²', 2)} tone="blue" />
-                <WarehouseResult label="최종 적정 면적" value={fmtN(calc.finalArea, ' m²', 1)} tone="final" />
+                <WarehouseResult label="공급 포함 적재수량 = 일 적재수량 × 1.3 (공급버퍼 30%)" value={fmtN(calc.effectiveQty, '', 1)} tone="blue" />
+                <WarehouseResult label="단위 면적 = 용기 Size 가로 × 용기 Size 세로" value={fmtN(calc.unitArea, ' m²', 2)} tone="blue" />
+                <WarehouseResult label="최종 적정 면적 = 공급포함적재수량 × (단위면적 × 면적여유율)" value={fmtN(calc.finalArea, ' m²', 1)} tone="final" />
               </div>
             </div>
           </div>
