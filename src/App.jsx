@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react'
-import { useAppState, initialState, migrateLogisticsPersonnel } from './store'
+import { useState, useRef, useEffect } from 'react'
+import { useAppState, initialState, migrateAppState } from './store'
 import WorkerWorkload from './modules/WorkerWorkload'
 import ElevatorWorkload from './modules/ElevatorWorkload'
 import AreaEfficiency from './modules/AreaEfficiency'
@@ -55,6 +55,14 @@ export default function App() {
     toastTimer.current = setTimeout(() => setToast(''), 2400)
   }
 
+  useEffect(() => {
+    const handleStorageWarn = (e) => {
+      showToast(`⚠️ ${e.detail || '저장 공간이 부족합니다.'}`)
+    }
+    window.addEventListener('lwo-storage-warning', handleStorageWarn)
+    return () => window.removeEventListener('lwo-storage-warning', handleStorageWarn)
+  }, [])
+
   const handleSave = async () => {
     try {
       const filename = `LWO_분석_${new Date().toISOString().slice(0, 10)}.json`
@@ -74,19 +82,7 @@ export default function App() {
     reader.onload = (ev) => {
       try {
         const loaded = JSON.parse(ev.target.result)
-        // 필수 필드 보강
-        setState({
-          ...initialState,
-          ...loaded,
-          worker: { ...initialState.worker, ...(loaded.worker || {}) },
-          elevator:  { ...initialState.elevator, ...(loaded.elevator || {}) },
-          area:      { ...initialState.area, ...(loaded.area || {}) },
-          inventory: { ...initialState.inventory, ...(loaded.inventory || {}) },
-          amr:       { ...initialState.amr, ...(loaded.amr || {}) },
-          logisticsPersonnel: { ...initialState.logisticsPersonnel, ...migrateLogisticsPersonnel(loaded.logisticsPersonnel || {}) },
-          warehouseArea: { ...initialState.warehouseArea, ...(loaded.warehouseArea || {}) },
-          automationRate: { ...initialState.automationRate, ...(loaded.automationRate || {}) }
-        })
+        setState(migrateAppState(loaded))
         showToast('📂 데이터를 불러왔습니다.')
       } catch {
         showToast('⚠️ 파일 형식이 잘못되었습니다.')

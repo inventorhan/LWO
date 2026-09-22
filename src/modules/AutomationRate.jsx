@@ -1,8 +1,6 @@
 import { fileToBase64, n, fmtN } from '../shared/utils/common'
 import HelpHint, { HintFormula, HintNote } from '../shared/components/HelpHint'
 
-const pct = (part, total) => total > 0 ? (part / total) * 100 : 0
-
 function AutomationPhotoInput({ title, photo, onChange, onRemove }) {
   return (
     <div className="input-group">
@@ -26,13 +24,15 @@ export default function AutomationRate({ data, updateData }) {
   const f = data || {}
   const set = (k, v) => updateData({ [k]: v })
 
+  const hasTotal = f.totalItems !== '' && f.totalItems !== null && f.totalItems !== undefined
   const totalItems = n(f.totalItems)
   const automatedItems = n(f.automatedItems)
-  const automationRate = pct(automatedItems, totalItems)
+  const automationRate = hasTotal && totalItems > 0 ? (automatedItems / totalItems) * 100 : null
 
-  const rehandlingTotal = n(f.rehandlingTotalItems) || totalItems
+  const hasRehandlingTotal = f.rehandlingTotalItems !== '' && f.rehandlingTotalItems !== null && f.rehandlingTotalItems !== undefined
+  const rehandlingTotal = hasRehandlingTotal ? n(f.rehandlingTotalItems) : totalItems
   const rehandlingItems = n(f.rehandlingItems)
-  const rehandlingRate = pct(rehandlingItems, rehandlingTotal)
+  const rehandlingRate = (hasRehandlingTotal || hasTotal) && rehandlingTotal > 0 ? (rehandlingItems / rehandlingTotal) * 100 : null
 
   const handlePhoto = async (key, file) => {
     try {
@@ -94,7 +94,7 @@ export default function AutomationRate({ data, updateData }) {
           </div>
           <div className="result-box full-width tone-final">
             <span className="result-box__label">자동화율 = 자동화 적용 Item 수 ÷ 총 입고 Item 수</span>
-            <span className="result-box__value">{fmtN(automationRate, '%', 1)}</span>
+            <span className="result-box__value">{fmtN(automationRate, '%', 1, true)}</span>
           </div>
         </div>
       </div>
@@ -121,7 +121,7 @@ export default function AutomationRate({ data, updateData }) {
           </div>
           <div className="result-box full-width tone-final">
             <span className="result-box__label">Re-Handling율 = Re-Handling Item 수 ÷ 총 입고 Item 수</span>
-            <span className="result-box__value">{fmtN(rehandlingRate, '%', 1)}</span>
+            <span className="result-box__value">{fmtN(rehandlingRate, '%', 1, true)}</span>
           </div>
         </div>
       </div>

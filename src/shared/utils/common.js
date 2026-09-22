@@ -23,15 +23,18 @@ export function nOr(v, fallback = 0) {
 
 /**
  * 숫자를 포맷팅하여 문자열로 반환합니다.
- * @param {number} v - 값
+ * @param {number|null|undefined} v - 값
  * @param {string} unit - 단위 (선택)
  * @param {number} decimals - 소수점 자리수 (기본 2)
- * @returns {string} 포맷팅된 문자열
+ * @param {boolean} allowZero - 0을 정상 값으로 허용할지 여부 (기본 false: 0 초과만 표시)
+ * @returns {string} 포맷팅된 문자열 또는 '—'
  */
-export function fmtN(v, unit = '', decimals = 2) {
-  return v !== null && !isNaN(v) && isFinite(v) && v > 0 
-    ? `${v.toLocaleString(undefined, { maximumFractionDigits: decimals })}${unit}` 
-    : '—';
+export function fmtN(v, unit = '', decimals = 2, allowZero = false) {
+  if (v === null || v === undefined || isNaN(v) || !isFinite(v)) return '—';
+  if (v > 0 || (allowZero && v === 0)) {
+    return `${v.toLocaleString(undefined, { maximumFractionDigits: decimals })}${unit}`;
+  }
+  return '—';
 }
 
 /**
@@ -74,7 +77,7 @@ export const fileToBase64 = (file) => new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
       try {
-        const MAX = 1280; // long edge
+        const MAX = 960; // long edge (모바일 localStorage 5MB 용량 최적화)
         let { width: w, height: h } = img;
         const scale = Math.min(1, MAX / Math.max(w, h));
         const cw = Math.round(w * scale);
@@ -83,7 +86,7 @@ export const fileToBase64 = (file) => new Promise((resolve, reject) => {
         canvas.width = cw; canvas.height = ch;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, cw, ch);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.72);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.65);
         URL.revokeObjectURL(url);
         resolve(dataUrl);
       } catch (err) {

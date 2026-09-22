@@ -1,7 +1,7 @@
 {
   "name": "lwo-app",
   "private": true,
-  "version": "1.2.9",
+  "version": "1.3.0",
   "description": "LWO 물류 분석 Tool — 휴대폰/PC로 9가지 물류 KPI 측정·분석",
   "author": "Haneol Lee",
   "main": "electron/main.cjs",
@@ -10,6 +10,7 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
+    "test": "vitest run",
     "preview": "vite preview",
     "bump": "node scripts/bump-version.mjs",
     "bump:patch": "node scripts/bump-version.mjs --patch",
@@ -92,6 +93,7 @@
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
     "vite": "^8.0.4",
-    "vite-plugin-singlefile": "^2.3.2"
+    "vite-plugin-singlefile": "^2.3.2",
+    "vitest": "^5.0.1"
   }
 }

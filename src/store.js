@@ -128,6 +128,156 @@ export const initialState = {
   savedAt: null,
 }
 
+export function migrateAppState(parsed = {}) {
+  if (!parsed || typeof parsed !== 'object') return initialState
+
+  // 구버전 area(mm 단위)를 m 단위로 마이그레이션 — 100 이상 값은 mm로 간주하고 ÷1000
+  const migrateAreaUnit = (parsedArea) => {
+    if (!parsedArea || parsedArea._unit === 'm') return parsedArea
+    const conv = (v) => {
+      const num = parseFloat(v)
+      if (!num) return v
+      return num >= 100 ? +(num / 1000).toFixed(2) : v
+    }
+    return {
+      ...parsedArea,
+      _unit: 'm',
+      factory: parsedArea.factory ? {
+        ...parsedArea.factory,
+        width: conv(parsedArea.factory.width),
+        height: conv(parsedArea.factory.height)
+      } : parsedArea.factory,
+      zones: (parsedArea.zones || []).map(z => ({
+        ...z,
+        width: conv(z.width),
+        height: conv(z.height),
+        items: (z.items || []).map(it => ({
+          ...it,
+          width: conv(it.width),
+          depth: conv(it.depth),
+          minHeight: conv(it.minHeight),
+          maxHeight: conv(it.maxHeight ?? it.height)
+        }))
+      }))
+    }
+  }
+
+  // 구버전 elevator(단일 cards)를 호기별 구조로 마이그레이션
+  let migratedElevator = parsed.elevator
+  if (migratedElevator && Array.isArray(migratedElevator.cards) && !migratedElevator.dataByHogi) {
+    const oldHogi = migratedElevator.basicInfo?.hogiNo || 1
+    migratedElevator = {
+      activeHogi: oldHogi,
+      dataByHogi: {
+        [String(oldHogi)]: {
+          basicInfo: { ...migratedElevator.basicInfo },
+          measurements: [{
+            id: `ev-cycle-migrated-${Date.now()}`,
+            name: '1',
+            cards: migratedElevator.cards
+          }],
+          loadItems: [],
+          photos: migratedElevator.photos || []
+        }
+      }
+    }
+  }
+  // E/V 단위 mm → m 마이그레이션 (100 이상이면 mm로 간주)
+  if (migratedElevator && migratedElevator.dataByHogi && migratedElevator._unit !== 'm') {
+    const convM = (v) => {
+      const num = parseFloat(v)
+      if (!num) return v
+      return num >= 100 ? +(num / 1000).toFixed(2) : v
+    }
+    const next = {}
+    Object.entries(migratedElevator.dataByHogi).forEach(([k, h]) => {
+      next[k] = {
+        ...h,
+        basicInfo: h.basicInfo
+          ? { ...h.basicInfo, evWidth: convM(h.basicInfo.evWidth), evDepth: convM(h.basicInfo.evDepth), stackLevel: h.basicInfo.stackLevel ?? h.loadItems?.[0]?.stackLevel ?? 4 }
+          : h.basicInfo,
+        loadItems: (h.loadItems || []).map(it => ({
+          ...it, width: convM(it.width), depth: convM(it.depth)
+        }))
+      }
+    })
+    migratedElevator = { ...migratedElevator, _unit: 'm', dataByHogi: next }
+  }
+
+  // 통계 마이그레이션 (v1.2.0 단일 records → dataByKey 구조)
+  const migratedInvStats = (() => {
+    const base = { ...initialState.inventoryStats, ...(parsed.inventoryStats || {}) }
+    if (parsed.inventoryStats && Array.isArray(parsed.inventoryStats.records)) {
+      const p = parsed.inventoryStats.product || '세탁기'
+      const m = parsed.inventoryStats.model   || 'Top Loader'
+      const key = `${p}::${m}`
+      base.productList = base.productList?.includes(p) ? base.productList : [...(base.productList || []), p]
+      base.modelsByProduct = {
+        ...(base.modelsByProduct || {}),
+        [p]: [...new Set([...(base.modelsByProduct?.[p] || []), m])]
+      }
+      base.activeProduct = p
+      base.activeModel = m
+      base.dataByKey = { ...(base.dataByKey || {}), [key]: { records: parsed.inventoryStats.records } }
+      delete base.records
+      delete base.product
+      delete base.model
+    }
+    return base
+  })()
+
+  return {
+    ...initialState,
+    ...parsed,
+    worker: {
+      ...initialState.worker,
+      ...(parsed.worker || {}),
+      transportTypes: { ...initialState.worker.transportTypes, ...((parsed.worker || {}).transportTypes || {}) },
+      dataByPersonnel: (parsed.worker && parsed.worker.dataByPersonnel) || initialState.worker.dataByPersonnel
+    },
+    elevator: { ...initialState.elevator, ...(migratedElevator || {}) },
+    area: { ...initialState.area, ...(migrateAreaUnit(parsed.area) || {}) },
+    inventory: { ...initialState.inventory, ...(parsed.inventory || {}) },
+    inventoryStats: migratedInvStats,
+    amr: { ...initialState.amr, ...(parsed.amr || {}) },
+    logisticsPersonnel: { ...initialState.logisticsPersonnel, ...migrateLogisticsPersonnel(parsed.logisticsPersonnel || {}) },
+    warehouseArea: { ...initialState.warehouseArea, ...(parsed.warehouseArea || {}) },
+    automationRate: { ...initialState.automationRate, ...(parsed.automationRate || {}) }
+  }
+}
+
+/** 사진을 제외한 경량화 상태 복사본 생성 (LocalStorage Quota 초과 시 백업용) */
+function stripPhotosFromState(s) {
+  const next = JSON.parse(JSON.stringify(s))
+  if (next.worker?.dataByPersonnel) {
+    Object.values(next.worker.dataByPersonnel).forEach(w => {
+      if (w.photos) w.photos = { transport: [], part: [] }
+    })
+  }
+  if (next.elevator?.dataByHogi) {
+    Object.values(next.elevator.dataByHogi).forEach(h => {
+      h.photos = []
+    })
+  }
+  if (next.area) {
+    if (next.area.factory) {
+      next.area.factory.photo = null
+      next.area.factory.photos = []
+    }
+    if (next.area.zones) {
+      next.area.zones.forEach(z => {
+        z.photo = null
+        if (z.items) z.items.forEach(it => { it.photo = null })
+      })
+    }
+  }
+  if (next.automationRate) {
+    next.automationRate.automationPhoto = null
+    next.automationRate.rehandlingPhoto = null
+  }
+  return next
+}
+
 export function useAppState() {
   const [state, setState] = useState(initialState)
 
@@ -136,116 +286,8 @@ export function useAppState() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved)
-        // 구버전 area(mm 단위)를 m 단위로 마이그레이션 — 1000 이상 값은 mm로 간주하고 ÷1000
-        const migrateAreaUnit = (parsedArea) => {
-          if (!parsedArea || parsedArea._unit === 'm') return parsedArea
-          const conv = (v) => {
-            const num = parseFloat(v)
-            if (!num) return v
-            return num >= 100 ? +(num / 1000).toFixed(2) : v   /* 100m 이상이면 mm 단위라 판단 */
-          }
-          return {
-            ...parsedArea,
-            _unit: 'm',
-            factory: parsedArea.factory ? {
-              ...parsedArea.factory,
-              width: conv(parsedArea.factory.width),
-              height: conv(parsedArea.factory.height)
-            } : parsedArea.factory,
-            zones: (parsedArea.zones || []).map(z => ({
-              ...z,
-              width: conv(z.width),
-              height: conv(z.height),
-              items: (z.items || []).map(it => ({
-                ...it,
-                width: conv(it.width),
-                depth: conv(it.depth),
-                minHeight: conv(it.minHeight),
-                maxHeight: conv(it.maxHeight ?? it.height)
-              }))
-            }))
-          }
-        }
-        // 구버전 elevator(단일 cards)를 호기별 구조로 마이그레이션
-        let migratedElevator = parsed.elevator
-        if (migratedElevator && Array.isArray(migratedElevator.cards) && !migratedElevator.dataByHogi) {
-          const oldHogi = migratedElevator.basicInfo?.hogiNo || 1
-          migratedElevator = {
-            activeHogi: oldHogi,
-            dataByHogi: {
-              [String(oldHogi)]: {
-                basicInfo: { ...migratedElevator.basicInfo },
-                measurements: [{
-                  id: `ev-cycle-migrated-${Date.now()}`,
-                  name: '1',
-                  cards: migratedElevator.cards
-                }],
-                loadItems: [],
-                photos: migratedElevator.photos || []
-              }
-            }
-          }
-        }
-        // E/V 단위 mm → m 마이그레이션 (100 이상이면 mm로 간주)
-        if (migratedElevator && migratedElevator.dataByHogi && migratedElevator._unit !== 'm') {
-          const convM = (v) => {
-            const num = parseFloat(v)
-            if (!num) return v
-            return num >= 100 ? +(num / 1000).toFixed(2) : v
-          }
-          const next = {}
-          Object.entries(migratedElevator.dataByHogi).forEach(([k, h]) => {
-            next[k] = {
-              ...h,
-              basicInfo: h.basicInfo
-                ? { ...h.basicInfo, evWidth: convM(h.basicInfo.evWidth), evDepth: convM(h.basicInfo.evDepth), stackLevel: h.basicInfo.stackLevel ?? h.loadItems?.[0]?.stackLevel ?? 4 }
-                : h.basicInfo,
-              loadItems: (h.loadItems || []).map(it => ({
-                ...it, width: convM(it.width), depth: convM(it.depth)
-              }))
-            }
-          })
-          migratedElevator = { ...migratedElevator, _unit: 'm', dataByHogi: next }
-        }
         // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time localStorage hydration.
-        setState({
-          ...initialState,
-          ...parsed,
-          worker: {
-            ...initialState.worker,
-            ...(parsed.worker || {}),
-            transportTypes: { ...initialState.worker.transportTypes, ...((parsed.worker || {}).transportTypes || {}) },
-            dataByPersonnel: (parsed.worker && parsed.worker.dataByPersonnel) || initialState.worker.dataByPersonnel
-          },
-          elevator:  { ...initialState.elevator, ...(migratedElevator || {}) },
-          area:      { ...initialState.area, ...(migrateAreaUnit(parsed.area) || {}) },
-          inventory:      { ...initialState.inventory, ...(parsed.inventory || {}) },
-          inventoryStats: (() => {
-            const base = { ...initialState.inventoryStats, ...(parsed.inventoryStats || {}) }
-            /* v1.2.0 → v1.2.2 마이그레이션: 단일 records → dataByKey 구조 */
-            if (parsed.inventoryStats && Array.isArray(parsed.inventoryStats.records)) {
-              const p = parsed.inventoryStats.product || '세탁기'
-              const m = parsed.inventoryStats.model   || 'Top Loader'
-              const key = `${p}::${m}`
-              base.productList = base.productList?.includes(p) ? base.productList : [...(base.productList || []), p]
-              base.modelsByProduct = {
-                ...(base.modelsByProduct || {}),
-                [p]: [...new Set([...(base.modelsByProduct?.[p] || []), m])]
-              }
-              base.activeProduct = p
-              base.activeModel = m
-              base.dataByKey = { ...(base.dataByKey || {}), [key]: { records: parsed.inventoryStats.records } }
-              delete base.records
-              delete base.product
-              delete base.model
-            }
-            return base
-          })(),
-          amr:            { ...initialState.amr, ...(parsed.amr || {}) },
-          logisticsPersonnel: { ...initialState.logisticsPersonnel, ...migrateLogisticsPersonnel(parsed.logisticsPersonnel || {}) },
-          warehouseArea: { ...initialState.warehouseArea, ...(parsed.warehouseArea || {}) },
-          automationRate: { ...initialState.automationRate, ...(parsed.automationRate || {}) }
-        })
+        setState(migrateAppState(parsed))
       } catch {
         // 잘못된 저장 데이터는 무시하고 기본 상태로 시작
       }
@@ -256,7 +298,16 @@ export function useAppState() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
     } catch {
-      // 사진이 너무 많아 quota 초과 등 — 무시
+      // 사진이 너무 많아 quota 초과 시: 사진 제외한 수치 데이터를 보존하여 데이터 유실 방지
+      try {
+        const stripped = stripPhotosFromState(state)
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(stripped))
+        window.dispatchEvent(new CustomEvent('lwo-storage-warning', {
+          detail: '저장 용량 초과로 사진을 제외한 측정 수치 데이터만 보존되었습니다.'
+        }))
+      } catch {
+        // 완전 실패 시 무시
+      }
     }
   }, [state])
 

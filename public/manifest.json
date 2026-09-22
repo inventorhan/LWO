@@ -2,10 +2,10 @@
   "name": "LWO 물류 분석 Tool",
   "short_name": "LWO Tool",
   "description": "Logistics Work Optimization Analysis Tool",
-  "start_url": "/",
+  "start_url": "./",
   "display": "standalone",
-  "background_color": "#1565C0",
-  "theme_color": "#1565C0",
+  "background_color": "#A50034",
+  "theme_color": "#A50034",
   "icons": [
     {
       "src": "favicon.svg",
