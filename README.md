@@ -1,6 +1,6 @@
 # 📦 LWO 물류 분석 Tool
 
-> **Logistics Work Optimize** — 휴대폰 하나로 물류 현장의 9가지 핵심 KPI를 측정·분석·시각화하는 도구
+> **Logistics Work Optimizer** — 휴대폰 하나로 물류 현장의 9가지 핵심 KPI를 측정·분석·시각화하는 도구
 
 [![Web App](https://img.shields.io/badge/▶_웹앱_바로_실행-A50034?style=for-the-badge)](https://inventorhan.github.io/LWO-debug/)
 [![Manual](https://img.shields.io/badge/📖_사용_설명서-6F0023?style=for-the-badge)](https://inventorhan.github.io/LWO-debug/manual.html)

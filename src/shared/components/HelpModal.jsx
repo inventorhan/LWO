@@ -110,7 +110,7 @@ const Table = ({ headers, rows }) => (
 const IntroContent = () => (
   <>
     <Section title="LWO 물류 분석 Tool이란?">
-      <p>LWO(Logistics Work Optimize)는 <b>물류 현장의 핵심 KPI 9가지</b>를 휴대폰으로 측정·계산할 수 있는 도구입니다. 측정 데이터는 모두 자동 저장되며, 결과를 엑셀로 내보낼 수 있습니다.</p>
+      <p>LWO(Logistics Work Optimizer)는 <b>물류 현장의 핵심 KPI 9가지</b>를 휴대폰으로 측정·계산할 수 있는 도구입니다. 측정 데이터는 모두 자동 저장되며, 결과를 엑셀로 내보낼 수 있습니다.</p>
       <Tip type="ok">현장에서 스톱워치 + 줄자 + 메모지로 하던 작업을 한 화면에서 해결합니다.</Tip>
     </Section>
 
