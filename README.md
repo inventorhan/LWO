@@ -3,6 +3,7 @@
 > **Logistics Work Optimizer** — 휴대폰 하나로 물류 현장의 9가지 핵심 KPI를 측정·분석·시각화하는 도구
 
 [![Web App](https://img.shields.io/badge/▶_웹앱_바로_실행-A50034?style=for-the-badge)](https://inventorhan.github.io/LWO-debug/)
+[![ONE Store](https://img.shields.io/badge/원스토어_다운로드-E5002C?style=for-the-badge)](https://m.onestore.co.kr/v2/ko-kr/app/0001006666)
 [![Manual](https://img.shields.io/badge/📖_사용_설명서-6F0023?style=for-the-badge)](https://inventorhan.github.io/LWO-debug/manual.html)
 [![Docs](https://img.shields.io/badge/📚_프로젝트_구조-424242?style=for-the-badge)](./docs/PROJECT_STRUCTURE.md)
 
@@ -47,9 +48,10 @@
 
 ### 일반 사용자
 1. **웹**: https://inventorhan.github.io/LWO-debug/ 접속
-2. **Android 앱**: `LWO_V*-release.apk` 다운로드 후 폰에 설치
-3. **Windows 앱**: `LWO_V*-Setup-windows.exe` (설치형) 또는 `LWO_V*-portable-windows.exe` (USB 실행)
-4. **오프라인 단일 HTML**: `LWO_V*-web.html` 파일을 폰/PC에 저장 후 더블클릭
+2. **휴대폰 (원스토어)**: [원스토어(ONE store) LWO 다운로드](https://m.onestore.co.kr/v2/ko-kr/app/0001006666)
+3. **Android 앱 직접 설치**: `LWO_V*-release.apk` 다운로드 후 폰에 설치
+4. **Windows 앱**: `LWO_V*-Setup-windows.exe` (설치형) 또는 `LWO_V*-portable-windows.exe` (USB 실행)
+5. **오프라인 단일 HTML**: `LWO_V*-web.html` 파일을 폰/PC에 저장 후 더블클릭
 
 ### 처음이라면
 📖 **[사용 설명서](https://inventorhan.github.io/LWO-debug/manual.html)** 를 먼저 보세요. 모듈별 절차 + 공식 + 계산 예시까지 정리되어 있습니다.
