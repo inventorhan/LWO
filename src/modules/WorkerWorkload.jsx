@@ -627,26 +627,26 @@ export default function WorkerWorkload({
             {Object.entries({ '피킹': COLORS.pick, '이동': COLORS.move, '로딩/언로딩': COLORS.load, '회수': COLORS.recovery }).map(([label, color]) => (
               <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                 <div style={{ width: 12, height: 12, background: color, borderRadius: 2 }} />
-                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#7C6E74' }}>{label}</span>
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{label}</span>
               </div>
             ))}
           </div>
 
           <div className="section-card" style={{ background: 'white' }}>
             <div className="section-title">인원별 작업 시간 {chartMode === 'avg' ? '평균' : '누적'} (초)</div>
-            <div style={{ display: 'flex', height: 220, gap: 8, alignItems: 'flex-end', margin: '32px 0 24px 0', borderBottom: '1px dashed #D4C8CD' }}>
+            <div style={{ display: 'flex', height: 220, gap: 8, alignItems: 'flex-end', margin: '32px 0 24px 0', borderBottom: '1px dashed #CBD5E1' }}>
               {dashboardStats.map((w, i) => {
                 const heightPct = maxT > 0 ? Math.max(2, (w.totalT / maxT) * 100) : 2
                 return (
                   <div key={w.isAverage ? 'avg-time' : `${w.name}-${i}`} style={{ flex: w.isAverage ? '0 0 48px' : 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: `${heightPct}%`, position: 'relative', minWidth: 0 }}>
-                    <div style={{ fontSize: '0.7rem', fontWeight: 800, position: 'absolute', top: -22, color: w.isAverage ? 'var(--color-primary-dark)' : '#2A1F24' }}>{w.totalT.toFixed(0)}s</div>
-                    <div style={{ width: '100%', maxWidth: 36, height: '100%', display: 'flex', flexDirection: 'column-reverse', borderRadius: '4px 4px 0 0', overflow: 'hidden', background: '#F4EFF1', outline: w.isAverage ? '2px solid var(--color-primary-soft)' : 'none' }}>
+                    <div style={{ fontSize: '0.7rem', fontWeight: 800, position: 'absolute', top: -22, color: w.isAverage ? 'var(--color-primary)' : 'var(--color-text-primary)' }}>{w.totalT.toFixed(0)}s</div>
+                    <div style={{ width: '100%', maxWidth: 36, height: '100%', display: 'flex', flexDirection: 'column-reverse', borderRadius: '4px 4px 0 0', overflow: 'hidden', background: '#F1F5F9', outline: w.isAverage ? '2px solid var(--color-primary-soft)' : 'none' }}>
                       {renderSegment(w.details.pickT, w.totalT, COLORS.pick, '피킹')}
                       {renderSegment(w.details.moveT, w.totalT, COLORS.move, '이동')}
                       {renderSegment(w.details.loadT, w.totalT, COLORS.load, '로딩')}
                       {renderSegment(w.details.recoverT, w.totalT, COLORS.recovery, '회수')}
                     </div>
-                    <div style={{ position: 'absolute', bottom: -22, fontSize: '0.7rem', color: w.isAverage ? 'var(--color-primary-dark)' : '#7C6E74', fontWeight: 800, textAlign: 'center', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.name}</div>
+                    <div style={{ position: 'absolute', bottom: -22, fontSize: '0.7rem', color: w.isAverage ? 'var(--color-primary)' : 'var(--color-text-muted)', fontWeight: 800, textAlign: 'center', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.name}</div>
                   </div>
                 )
               })}
@@ -695,9 +695,9 @@ export default function WorkerWorkload({
           </div>
 
           {teamTotal.totalT > 0 && (
-            <div className="section-card" style={{ background: '#2A1F24', color: 'white' }}>
-              <div className="section-title" style={{ color: 'white', borderBottomColor: '#3A2F33' }}>창고 전체 작업 시간 분포 (팀 총합)</div>
-              <div style={{ height: 44, width: '100%', display: 'flex', borderRadius: 8, overflow: 'hidden', margin: '12px 0 8px', border: '1px solid #4A4045' }}>
+            <div className="section-card" style={{ background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 100%)', borderColor: '#334155', color: 'white' }}>
+              <div className="section-title" style={{ color: 'white', borderBottomColor: 'rgba(255,255,255,0.15)' }}>창고 전체 작업 시간 분포 (팀 총합)</div>
+              <div style={{ height: 44, width: '100%', display: 'flex', borderRadius: 8, overflow: 'hidden', margin: '12px 0 8px', border: '1px solid #334155' }}>
                 {renderHorizontalSegment(teamTotal.pickT, teamTotal.totalT, COLORS.pick, '피킹', 's')}
                 {renderHorizontalSegment(teamTotal.moveT, teamTotal.totalT, COLORS.move, '이동', 's')}
                 {renderHorizontalSegment(teamTotal.loadT, teamTotal.totalT, COLORS.load, '로딩', 's')}

@@ -122,16 +122,17 @@ export default function HelpHint({ title, children }) {
 /* 공식/예시를 강조하는 작은 박스 */
 export const HintFormula = ({ children }) => (
   <pre style={{
-    background: '#2A1F24',
-    color: 'white',
-    padding: '8px 12px',
-    borderRadius: 6,
+    background: '#0F172A',
+    color: '#F8FAFC',
+    padding: '10px 14px',
+    borderRadius: 8,
     fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-    fontSize: '0.78rem',
-    margin: '6px 0',
+    fontSize: '0.8rem',
+    margin: '8px 0',
     whiteSpace: 'pre-wrap',
     wordBreak: 'break-word',
-    overflow: 'auto'
+    overflow: 'auto',
+    border: '1px solid #1E293B'
   }}>{children}</pre>
 )
 

@@ -259,7 +259,7 @@ export default function ElevatorWorkload({
         {loadItems.map((it, idx) => (
           <div key={it.id} className="section-card" style={{ background: 'white', margin: '0 0 10px 0' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-              <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#2A1F24' }}>적재 #{idx + 1}</span>
+              <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>적재 #{idx + 1}</span>
               <button onClick={() => removeElevatorLoadItem(it.id)}
                 style={{ border: 'none', background: 'none', color: '#9C8E94', fontSize: '1.1rem', cursor: 'pointer' }}>🗑️</button>
             </div>
@@ -454,14 +454,14 @@ export default function ElevatorWorkload({
                 const heightPct = maxT > 0 ? Math.max(2, (h.totalT / maxT) * 100) : 2
                 return (
                   <div key={h.hogi} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: `${heightPct}%`, position: 'relative', minWidth: 0 }}>
-                    <div style={{ fontSize: '0.7rem', fontWeight: 800, position: 'absolute', top: -22, color: '#2A1F24' }}>{h.totalT.toFixed(0)}s</div>
-                    <div style={{ width: '100%', maxWidth: 36, height: '100%', display: 'flex', flexDirection: 'column-reverse', borderRadius: '4px 4px 0 0', overflow: 'hidden', background: '#F4EFF1' }}>
+                    <div style={{ fontSize: '0.7rem', fontWeight: 800, position: 'absolute', top: -22, color: 'var(--color-text-primary)' }}>{h.totalT.toFixed(0)}s</div>
+                    <div style={{ width: '100%', maxWidth: 36, height: '100%', display: 'flex', flexDirection: 'column-reverse', borderRadius: '4px 4px 0 0', overflow: 'hidden', background: '#F1F5F9' }}>
                       {renderSeg(h.loadT, h.totalT, COLORS.load)}
                       {renderSeg(h.moveT2, h.totalT, COLORS.move)}
                       {renderSeg(h.unloadT, h.totalT, COLORS.unload)}
                       {renderSeg(h.recoverT, h.totalT, COLORS.recovery)}
                     </div>
-                    <div style={{ position: 'absolute', bottom: -22, fontSize: '0.7rem', color: '#7C6E74', fontWeight: 700, textAlign: 'center', width: '100%' }}>{h.hogi}호기</div>
+                    <div style={{ position: 'absolute', bottom: -22, fontSize: '0.7rem', color: 'var(--color-text-muted)', fontWeight: 700, textAlign: 'center', width: '100%' }}>{h.hogi}호기</div>
                   </div>
                 )
               })}
@@ -475,8 +475,8 @@ export default function ElevatorWorkload({
                 const wlColor = h.wlRate > 90 ? '#B45309' : h.wlRate > 70 ? '#ea580c' : '#047857'
                 return (
                   <div key={h.hogi} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ width: 60, fontSize: '0.78rem', fontWeight: 700, color: '#4A4045' }}>{h.hogi}호기</span>
-                    <div style={{ flex: 1, height: 22, background: '#F4EFF1', borderRadius: 4, overflow: 'hidden' }}>
+                    <span style={{ width: 60, fontSize: '0.78rem', fontWeight: 700, color: 'var(--color-text-secondary)' }}>{h.hogi}호기</span>
+                    <div style={{ flex: 1, height: 22, background: '#F1F5F9', borderRadius: 4, overflow: 'hidden' }}>
                       <div style={{ width: `${Math.min(100, h.wlRate)}%`, height: '100%', background: wlColor, transition: 'width .3s' }} />
                     </div>
                     <span style={{ width: 56, fontSize: '0.82rem', fontWeight: 800, color: wlColor, textAlign: 'right' }}>{h.wlRate.toFixed(1)}%</span>

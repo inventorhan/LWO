@@ -14,19 +14,19 @@ const TABS = [
 ]
 
 const C = {
-  primary: '#A50034',
-  primaryDark: '#6F0023',
-  primarySoft: '#F4E1E7',
-  primarySofter: '#FAEFF2',
-  warn: '#B45309',
-  warnBg: '#FEF3C7',
-  ok: '#047857',
-  okBg: '#D1FAE5',
-  cardBg: '#FBF8F9',
-  border: '#E5DCDF',
-  text: '#1F1218',
-  textSec: '#44383E',
-  textMuted: '#7C6E74'
+  primary: '#C40030',
+  primaryDark: '#8F0022',
+  primarySoft: '#FFF1F2',
+  primarySofter: '#F8FAFC',
+  warn: '#D97706',
+  warnBg: '#FFFBEB',
+  ok: '#059669',
+  okBg: '#ECFDF5',
+  cardBg: '#FFFFFF',
+  border: '#E2E8F0',
+  text: '#0F172A',
+  textSec: '#334155',
+  textMuted: '#64748B'
 }
 
 /* 재사용 박스 */
@@ -633,8 +633,11 @@ export default function HelpModal({ open, onClose }) {
           justifyContent: 'space-between'
         }}>
           <div>
-            <div style={{ fontSize: '1.1rem', fontWeight: 800 }}>📖 LWO 사용 설명서</div>
-            <div style={{ fontSize: '0.78rem', opacity: 0.9, marginTop: 2 }}>모듈별 상세 가이드 + 공식 + 예시</div>
+            <div style={{ fontSize: '1.1rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span className="brand-badge">NOL-IS</span>
+              <span>LWO 사용 설명서</span>
+            </div>
+            <div style={{ fontSize: '0.78rem', opacity: 0.9, marginTop: 2 }}>Logistics Work Optimizer 상세 가이드 + 공식 + 예시</div>
           </div>
           <button onClick={onClose} style={{
             background: 'rgba(255,255,255,0.15)',

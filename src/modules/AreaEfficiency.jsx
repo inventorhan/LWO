@@ -253,7 +253,7 @@ export default function AreaEfficiency({ data, updateData }) {
               return (
                 <div key={iIdx} className="section-card" style={{ background: '#ffffff', margin: '0 0 12px 0', position: 'relative' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                    <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#2A1F24' }}>적재 #{iIdx + 1}</span>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>적재 #{iIdx + 1}</span>
                     <button onClick={() => { if (window.confirm('이 적재 항목을 삭제하시겠습니까?')) removeItem(safeActiveZone, iIdx) }}
                       style={{ border: 'none', background: 'none', color: '#9C8E94', fontSize: '1.1rem', cursor: 'pointer' }}>🗑️</button>
                   </div>
@@ -346,8 +346,8 @@ export default function AreaEfficiency({ data, updateData }) {
         })
         const maxEff = Math.max(1, ...zoneStats.map(z => z.eff || 0))
         return (
-          <div className="section-card" style={{ background: '#2A1F24', borderColor: '#3A2F33', color: 'white' }}>
-            <div className="section-title" style={{ color: 'white', borderBottomColor: '#4A4045' }}>
+          <div className="section-card" style={{ background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 100%)', borderColor: '#334155', color: 'white' }}>
+            <div className="section-title" style={{ color: 'white', borderBottomColor: 'rgba(255,255,255,0.15)' }}>
               📊 구역별 면적 효율 분석
               <HelpHint title="구역별 면적 효율 분석">
                 <p>모든 구역의 효율을 한 화면에서 비교하는 결과 영역입니다.</p>
@@ -365,24 +365,24 @@ export default function AreaEfficiency({ data, updateData }) {
 
             {/* 그래프 */}
             {zoneStats.some(z => z.eff !== null) && (
-              <div style={{ display: 'flex', height: 200, gap: 8, alignItems: 'flex-end', margin: '32px 0 28px 0', borderBottom: '1px dashed #4A4045', padding: '0 4px' }}>
+              <div style={{ display: 'flex', height: 200, gap: 8, alignItems: 'flex-end', margin: '32px 0 28px 0', borderBottom: '1px dashed #334155', padding: '0 4px' }}>
                 {zoneStats.map(z => {
                   const heightPct = z.eff !== null ? Math.max(2, (z.eff / maxEff) * 100) : 2
-                  const color = z.eff === null ? '#4A4045' : z.eff > 90 ? '#dc2626' : z.eff > 50 ? '#0ea5e9' : '#0891b2'
+                  const color = z.eff === null ? '#334155' : z.eff > 90 ? '#ef4444' : z.eff > 50 ? '#0284c7' : '#0ea5e9'
                   return (
                     <div key={z.idx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', position: 'relative', minWidth: 0 }}>
                       <div style={{ flex: 1, width: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
                         <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'white', textAlign: 'center', marginBottom: 4 }}>
                           {z.eff !== null ? `${z.eff.toFixed(0)}%` : '—'}
                         </div>
-                        <div style={{ fontSize: '0.65rem', color: '#9C8E94', textAlign: 'center', marginBottom: 4 }}>
+                        <div style={{ fontSize: '0.65rem', color: '#94A3B8', textAlign: 'center', marginBottom: 4 }}>
                           {z.ia > 0 ? `(${z.ia.toFixed(0)}m²)` : ''}
                         </div>
                         <div style={{ width: '100%', maxWidth: 56, margin: '0 auto', height: `${heightPct}%`, background: color, borderRadius: '4px 4px 0 0', minHeight: 4, transition: 'height .3s' }} />
                       </div>
-                      <div style={{ position: 'absolute', bottom: -22, fontSize: '0.72rem', color: '#D4C8CD', fontWeight: 700, textAlign: 'center', width: '100%' }}>
+                      <div style={{ position: 'absolute', bottom: -22, fontSize: '0.72rem', color: '#E2E8F0', fontWeight: 700, textAlign: 'center', width: '100%' }}>
                         {z.idx + 1}구역
-                        {z.za > 0 && <div style={{ fontSize: '0.62rem', color: '#9C8E94', fontWeight: 500 }}>({z.za.toFixed(0)}m²)</div>}
+                        {z.za > 0 && <div style={{ fontSize: '0.62rem', color: '#94A3B8', fontWeight: 500 }}>({z.za.toFixed(0)}m²)</div>}
                       </div>
                     </div>
                   )

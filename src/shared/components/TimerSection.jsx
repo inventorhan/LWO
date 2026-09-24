@@ -34,8 +34,8 @@ export default function TimerSection({ title, start, end, onStart, onEnd, onDele
       )}
 
       <div style={{
-        fontSize: '0.92rem', fontWeight: 700, color: '#2A1F24',
-        marginBottom: 12, paddingRight: onDelete ? 32 : 0
+        fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-text-primary)',
+        marginBottom: 12, paddingRight: onDelete ? 32 : 0, letterSpacing: '-0.01em'
       }}>{title}</div>
 
       {extraInputs && <div style={{ marginBottom: 12 }}>{extraInputs}</div>}
@@ -46,7 +46,7 @@ export default function TimerSection({ title, start, end, onStart, onEnd, onDele
           <button
             type="button"
             className="btn btn-time"
-            style={{ backgroundColor: isRunning ? '#16a34a' : '#4A4045' }}
+            style={{ backgroundColor: isRunning ? '#059669' : '#334155' }}
             onClick={onStart}
           >
             {start ? fmtTime(start) : '▶ Start'}
@@ -57,7 +57,7 @@ export default function TimerSection({ title, start, end, onStart, onEnd, onDele
           <button
             type="button"
             className="btn btn-time"
-            style={{ backgroundColor: end ? '#1F1218' : '#dc2626' }}
+            style={{ backgroundColor: end ? '#0F172A' : '#E11D48' }}
             onClick={onEnd}
             disabled={!start}
           >

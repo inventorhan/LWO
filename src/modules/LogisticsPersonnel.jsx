@@ -317,8 +317,8 @@ export default function LogisticsPersonnel({ data, updateData }) {
         )}
       </div>
 
-      <div className="section-card" style={{ background: '#2A1F24', color: 'white' }}>
-        <div className="section-title" style={{ color: 'white', borderBottomColor: '#4A4045' }}>Sub Total</div>
+      <div className="section-card" style={{ background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 100%)', borderColor: '#334155', color: 'white' }}>
+        <div className="section-title" style={{ color: 'white', borderBottomColor: 'rgba(255,255,255,0.15)' }}>Sub Total</div>
         <div className="result-box full-width tone-final">
           <span className="result-box__label">전체 물류 적정 인원</span>
           <span className="result-box__value">{fmtN(totalPersonnel, '명', 2)}</span>

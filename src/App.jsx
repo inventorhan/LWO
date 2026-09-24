@@ -209,8 +209,15 @@ export default function App() {
       {/* Sidebar (Desktop only) */}
       <aside className="sidebar">
         <div className="sidebar-brand">
-          <h1>📦 LWO</h1>
-          <p>물류 시스템 분석 Tool</p>
+          <div className="sidebar-brand-top">
+            <span className="brand-badge">NOL-IS</span>
+            <span className="sidebar-suite-tag">Smart Suite</span>
+          </div>
+          <h1 className="sidebar-title">
+            <span className="sidebar-logo-icon">📦</span>
+            <span className="sidebar-logo-text">LWO</span>
+          </h1>
+          <p className="sidebar-desc">Logistics Work Optimizer</p>
         </div>
         <nav className="sidebar-nav">
           {TABS.map(tab => (
@@ -220,17 +227,23 @@ export default function App() {
               onClick={() => setActiveTab(tab.id)}
             >
               <span className="nav-icon">{tab.icon}</span>
-              <span>{tab.label}</span>
+              <span className="nav-text">{tab.label}</span>
             </button>
           ))}
         </nav>
+        <div className="sidebar-footer">
+          <div className="sidebar-footer-title">NOL-IS Operations Suite</div>
+          <div className="sidebar-footer-sub">v1.3.0 · Web &amp; Mobile</div>
+        </div>
       </aside>
 
       {/* Header */}
       <header className="app-header">
         <div className="header-left">
+          <span className="brand-badge">NOL-IS</span>
           <span className="header-title">LWO</span>
-          <span className="header-subtitle">물류 분석 Tool</span>
+          <span className="header-divider hide-sm">/</span>
+          <span className="header-subtitle hide-sm">Logistics Work Optimizer</span>
         </div>
         <div className="header-right">
           <label className="header-btn" title="JSON 데이터 불러오기">
@@ -240,15 +253,13 @@ export default function App() {
           <button className="header-btn" onClick={handleSave} title="JSON 저장">
             <span>💾</span><span className="hide-sm">저장</span>
           </button>
-          <button className="header-btn" onClick={handleExportExcel} title="Excel 내보내기"
-            style={{ background: 'rgba(211,47,47,0.85)', borderColor: 'rgba(255,255,255,0.5)' }}>
+          <button className="header-btn btn-excel" onClick={handleExportExcel} title="Excel 내보내기">
             <span>📊</span><span className="hide-sm">엑셀</span>
           </button>
           <button className="header-btn" onClick={() => setHelpOpen(true)} title="사용 설명서 열기">
             <span>📖</span><span className="hide-sm">설명서</span>
           </button>
-          <button className="header-btn" onClick={handleReset} title="모든 입력 초기화"
-            style={{ background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.2)' }}>
+          <button className="header-btn btn-reset" onClick={handleReset} title="모든 입력 초기화">
             <span>🔄</span>
           </button>
         </div>
