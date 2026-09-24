@@ -48,6 +48,15 @@ export default function App() {
   const [toast, setToast] = useState('')
   const [helpOpen, setHelpOpen] = useState(false)
   const toastTimer = useRef(null)
+  const bottomNavRef = useRef(null)
+
+  useEffect(() => {
+    if (!bottomNavRef.current) return
+    const activeBtn = bottomNavRef.current.querySelector('.nav-item.active')
+    if (activeBtn) {
+      activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+    }
+  }, [activeTab])
 
   const showToast = (msg) => {
     setToast(msg)
@@ -274,7 +283,7 @@ export default function App() {
       </main>
 
       {/* Bottom nav (Mobile/Tablet only) */}
-      <nav className="bottom-nav">
+      <nav className="bottom-nav" ref={bottomNavRef}>
         {TABS.map(tab => (
           <button
             key={tab.id}
