@@ -1,3 +1,5 @@
+import { getLanguage, lwoText } from '../../i18n'
+import { translatedHelp } from './helpTranslations'
 import { useState, useEffect } from 'react'
 
 const TABS = [
@@ -106,15 +108,49 @@ const Table = ({ headers, rows }) => (
   </div>
 )
 
+const TranslatedHelp = ({ tab, language }) => {
+  const index = language === 'English' ? 0 : 1
+  const translate = value => value[index]
+  return translatedHelp[tab].map((section, sectionIndex) => (
+    <Section key={sectionIndex} title={translate(section.title)}>
+      {section.blocks.map((block, blockIndex) => {
+        switch (block.type) {
+          case 'paragraph':
+            return <p key={blockIndex}>{translate(block.text)}</p>
+          case 'tip':
+            return <Tip key={blockIndex} type={block.variant}>{translate(block.text)}</Tip>
+          case 'formula':
+            return <Formula key={blockIndex}>{translate(block.text)}</Formula>
+          case 'list':
+            return <ul key={blockIndex} style={{ paddingLeft: 18, marginTop: 6 }}>
+              {block.items.map((item, index) => <li key={index}>{translate(item)}</li>)}
+            </ul>
+          case 'table':
+            return <Table key={blockIndex} headers={block.headers.map(translate)}
+              rows={block.rows.map(row => row.map(translate))} />
+          case 'steps':
+            return block.items.map((item, index) => (
+              <Step key={`${blockIndex}-${index}`} n={index + 1} title={translate(item.title)}>
+                {translate(item.text)}
+              </Step>
+            ))
+          default:
+            throw new Error(`Unknown help block: ${block.type}`)
+        }
+      })}
+    </Section>
+  ))
+}
+
 /* ── 콘텐츠 ── */
 const IntroContent = () => (
   <>
-    <Section title="LWO 물류 분석 Tool이란?">
+    <Section title={lwoText('LWO 물류 분석 Tool이란?')}>
       <p>LWO(Logistics Work Optimizer)는 <b>물류 현장의 핵심 KPI 9가지</b>를 휴대폰으로 측정·계산할 수 있는 도구입니다. 측정 데이터는 모두 자동 저장되며, 결과를 엑셀로 내보낼 수 있습니다.</p>
-      <Tip type="ok">현장에서 스톱워치 + 줄자 + 메모지로 하던 작업을 한 화면에서 해결합니다.</Tip>
+      <Tip type="ok">{lwoText('현장에서 스톱워치 + 줄자 + 메모지로 하던 작업을 한 화면에서 해결합니다.')}</Tip>
     </Section>
 
-    <Section title="8개 메뉴와 9가지 분석 한눈에 보기">
+    <Section title={lwoText('8개 메뉴와 9가지 분석 한눈에 보기')}>
       <Table
         headers={['모듈', '무엇을 측정?', '결과']}
         rows={[
@@ -128,17 +164,17 @@ const IntroContent = () => (
           ['⚙️ 물류 자동화율', '자동화 적용 Item + Re-Handling Item', '자동화율 %, Re-Handling율 %']
         ]}
       />
-      <Tip>실적 기준 재고는 앱의 <b>적정 재고량</b> 메뉴 안에서 <b>실적 기준 재고</b> 탭으로 전환해 사용합니다.</Tip>
+      <Tip>실적 기준 재고는 앱의 <b>{lwoText('적정 재고량')}</b> 메뉴 안에서 <b>{lwoText('실적 기준 재고')}</b> 탭으로 전환해 사용합니다.</Tip>
     </Section>
 
-    <Section title="공통 사용 흐름">
-      <Step n="1" title="모듈 선택">하단 탭 (휴대폰) 또는 좌측 사이드바 (PC)에서 분석하려는 모듈을 선택합니다.</Step>
-      <Step n="2" title="기초 정보 입력">각 모듈의 기초 정보(치수, UPH, 시간 등)를 입력합니다. 빈 칸은 0으로 계산됩니다.</Step>
-      <Step n="3" title="측정 / 자동 산출">스톱워치 버튼이 있는 모듈은 ▶ 시작 → ⏹ 종료를 눌러 시간을 잽니다. 나머지는 입력 즉시 자동 계산됩니다.</Step>
-      <Step n="4" title="저장 / 내보내기">상단의 💾 저장(JSON), 📊 엑셀 버튼으로 결과를 보관합니다.</Step>
+    <Section title={lwoText('공통 사용 흐름')}>
+      <Step n="1" title={lwoText('모듈 선택')}>{lwoText('하단 탭 (휴대폰) 또는 좌측 사이드바 (PC)에서 분석하려는 모듈을 선택합니다.')}</Step>
+      <Step n="2" title={lwoText('기초 정보 입력')}>{lwoText('각 모듈의 기초 정보(치수, UPH, 시간 등)를 입력합니다. 빈 칸은 0으로 계산됩니다.')}</Step>
+      <Step n="3" title={lwoText('측정 / 자동 산출')}>{lwoText('스톱워치 버튼이 있는 모듈은 ▶ 시작 → ⏹ 종료를 눌러 시간을 잽니다. 나머지는 입력 즉시 자동 계산됩니다.')}</Step>
+      <Step n="4" title={lwoText('저장 / 내보내기')}>{lwoText('상단의 💾 저장(JSON), 📊 엑셀 버튼으로 결과를 보관합니다.')}</Step>
     </Section>
 
-    <Section title="상단 버튼 안내">
+    <Section title={lwoText('상단 버튼 안내')}>
       <Table
         headers={['버튼', '용도']}
         rows={[
@@ -156,32 +192,32 @@ const IntroContent = () => (
 
 const WorkerContent = () => (
   <>
-    <Section title="이 모듈은 언제 쓰나요?">
+    <Section title={lwoText('이 모듈은 언제 쓰나요?')}>
       <p>한 명의 작업자(또는 운반 수단)가 한 사이클(피킹 → 이동 → 로딩/언로딩 → 회수)을 도는 데 걸리는 시간을 실측해 <b>부하율(%)</b>을 산출합니다. 인원·운반 수단별 효율 비교에 사용합니다.</p>
     </Section>
 
-    <Section title="입력 절차">
-      <Step n="1" title="작업자 추가/선택">
+    <Section title={lwoText('입력 절차')}>
+      <Step n="1" title={lwoText('작업자 추가/선택')}>
         상단 작업자 탭에서 측정할 사람을 선택합니다. 이름 추가는 <b>명단 관리</b> 버튼.
       </Step>
-      <Step n="2" title="운반 종류 / 속도 / 가중치 / 공급횟수 설정">
+      <Step n="2" title={lwoText('운반 종류 / 속도 / 가중치 / 공급횟수 설정')}>
         도보(2.3 m/s) / 대차(1.8) / 파렛트(2.0) / AGV(1.5) 중 선택하면 표준 속도가 자동 입력되며, <b>운반 속도는 모든 종류에서 직접 수정</b>할 수 있습니다. <b>부하 가중치</b>는 0.5~1.0 (통상 0.8 = 80% 가동). 측정 결과 영역의 <b>시간당 공급횟수(회/h)</b>가 부하율 환산의 핵심값입니다 (기본 1).
       </Step>
-      <Step n="3" title="측정 회차마다 4단계 시간 기록">
+      <Step n="3" title={lwoText('측정 회차마다 4단계 시간 기록')}>
         ▶ 시작 / ⏹ 종료 버튼으로 각 단계의 시간을 잽니다. 4단계 모두 측정 완료해야 한 사이클입니다.
         <ul style={{ marginTop: 6, paddingLeft: 18 }}>
           <li><b>피킹</b>: 자재를 집어 운반구에 싣는 시간 (자재 종수도 함께 입력)</li>
           <li><b>이동</b>: 운반 경로 이동 시간 (공정 번호 1~10)</li>
-          <li><b>로딩/언로딩</b>: 목적지에서 내리는 시간 (공정 번호)</li>
+          <li><b>{lwoText('로딩/언로딩')}</b>: 목적지에서 내리는 시간 (공정 번호)</li>
           <li><b>회수</b>: 빈 운반구로 복귀하는 시간</li>
         </ul>
       </Step>
-      <Step n="4" title="회차 추가">
+      <Step n="4" title={lwoText('회차 추가')}>
         평균값의 신뢰도를 위해 같은 사이클을 3~5회 반복 측정. <b>+ 회차</b> 버튼으로 추가합니다.
       </Step>
     </Section>
 
-    <Section title="자동 산출 공식">
+    <Section title={lwoText('자동 산출 공식')}>
       <Formula>{`평균 1회 운반 시간 = Σ (피킹+이동+로딩/언로딩+회수) ÷ 측정 횟수
 시간당 점유 시간 = 평균 1회 운반 시간 × 시간당 공급횟수
 부하 가중 시간 = 3600초 × 부하 가중치
@@ -189,16 +225,16 @@ const WorkerContent = () => (
       <Tip>1시간 내내 측정하기 어려우므로, 몇 회 측정한 <b>평균 1회 시간</b>에 <b>시간당 공급횟수</b>를 곱해 환산합니다. 예: 평균 400초 × 6회 = 2400초, 가중 시간 2880초 → 약 83%. 공급횟수 미입력 시 기본 1회/h로 계산됩니다.</Tip>
     </Section>
 
-    <Section title="상세 시간 그래프">
-      <p>측정 데이터가 1회 이상 있으면 <b>상세 시간 그래프</b>에서 회차별 또는 작업자별 시간을 확인할 수 있습니다.</p>
+    <Section title={lwoText('상세 시간 그래프')}>
+      <p>측정 데이터가 1회 이상 있으면 <b>{lwoText('상세 시간 그래프')}</b>에서 회차별 또는 작업자별 시간을 확인할 수 있습니다.</p>
       <ul style={{ paddingLeft: 18, marginTop: 6 }}>
-        <li><b>회차별</b>: 선택 작업자의 피킹·이동·로딩/언로딩·회수 시간을 회차별로 비교</li>
-        <li><b>작업자별</b>: 여러 작업자의 총 운반 시간과 평균 부하율 비교</li>
+        <li><b>{lwoText('회차별')}</b>: 선택 작업자의 피킹·이동·로딩/언로딩·회수 시간을 회차별로 비교</li>
+        <li><b>{lwoText('작업자별')}</b>: 여러 작업자의 총 운반 시간과 평균 부하율 비교</li>
         <li><b>라인형 / 박스형</b>: 추세 확인 또는 항목별 구성 비교에 맞춰 선택</li>
       </ul>
     </Section>
 
-    <Section title="결과 해석">
+    <Section title={lwoText('결과 해석')}>
       <Table
         headers={['부하율', '판정', '대응']}
         rows={[
@@ -209,7 +245,7 @@ const WorkerContent = () => (
       />
     </Section>
 
-    <Section title="자주 묻는 질문">
+    <Section title={lwoText('자주 묻는 질문')}>
       <Tip type="info">
         <b>Q. 운반 종류에 없는 수단이 있어요.</b><br/>
         A. <b>운반 관리</b> 버튼으로 직접 추가 가능합니다 (이름·속도 입력).
@@ -221,15 +257,15 @@ const WorkerContent = () => (
 
 const ElevatorContent = () => (
   <>
-    <Section title="이 모듈은 언제 쓰나요?">
+    <Section title={lwoText('이 모듈은 언제 쓰나요?')}>
       <p>공장 내 여러 엘리베이터(1~9호기)의 운반 효율을 비교하고, 카(케이지) 면적 대비 실제 적재율을 확인합니다.</p>
     </Section>
 
-    <Section title="입력 절차">
-      <Step n="1" title="호기 선택">상단 1~9호기 탭에서 측정 대상 호기를 선택합니다.</Step>
-      <Step n="2" title="E/V 가로 / 세로 입력 (단위: m)">예: 가로 2.2 m, 세로 1.5 m → 면적 자동 3.3 m².</Step>
-      <Step n="3" title="실 적재 항목 추가">박스/대차/파렛트 등 실제로 싣는 물건의 종류·개수·치수(m)를 입력합니다. 적재 단수는 호기 전체 공통값으로 입력합니다.</Step>
-      <Step n="4" title="측정 회차 시작">
+    <Section title={lwoText('입력 절차')}>
+      <Step n="1" title={lwoText('호기 선택')}>상단 1~9호기 탭에서 측정 대상 호기를 선택합니다.</Step>
+      <Step n="2" title={lwoText('E/V 가로 / 세로 입력 (단위: m)')}>예: 가로 2.2 m, 세로 1.5 m → 면적 자동 3.3 m².</Step>
+      <Step n="3" title={lwoText('실 적재 항목 추가')}>박스/대차/파렛트 등 실제로 싣는 물건의 종류·개수·치수(m)를 입력합니다. 적재 단수는 호기 전체 공통값으로 입력합니다.</Step>
+      <Step n="4" title={lwoText('측정 회차 시작')}>
         4단계 카드의 시간을 잽니다.
         <ul style={{ marginTop: 6, paddingLeft: 18 }}>
           <li><b>로딩</b>: E/V 안에 짐을 실는 시간 + 자재 종수</li>
@@ -238,10 +274,10 @@ const ElevatorContent = () => (
           <li><b>회수</b>: 빈 차로 복귀</li>
         </ul>
       </Step>
-      <Step n="5" title="부하 가중치 / 시간당 공급횟수 입력">측정 결과 카드에서 가중치(0.5~1.0)와 <b>시간당 공급횟수(회/h, 기본 1)</b>를 입력합니다. 부하율은 평균 1회 시간 × 공급횟수로 환산됩니다.</Step>
+      <Step n="5" title={lwoText('부하 가중치 / 시간당 공급횟수 입력')}>측정 결과 카드에서 가중치(0.5~1.0)와 <b>시간당 공급횟수(회/h, 기본 1)</b>를 입력합니다. 부하율은 평균 1회 시간 × 공급횟수로 환산됩니다.</Step>
     </Section>
 
-    <Section title="자동 산출 공식">
+    <Section title={lwoText('자동 산출 공식')}>
       <Formula>{`E/V 면적       = 가로 × 세로                         [m²]
 실 적재 면적   = Σ (가로 × 세로 × 개수) ÷ 적재 단수   [m²]
 E/V 적재율(%) = 실 적재 면적 ÷ E/V 면적 × 100
@@ -250,7 +286,7 @@ E/V 적재율(%) = 실 적재 면적 ÷ E/V 면적 × 100
 E/V 부하율(%) = (평균 1회 × 시간당 공급횟수) ÷ (3600 × 가중치) × 100`}</Formula>
     </Section>
 
-    <Section title="호기별 비교 대시보드">
+    <Section title={lwoText('호기별 비교 대시보드')}>
       <p>2개 이상 호기를 측정하면 화면 하단에 <b>호기별 부하 분석 대시보드</b>가 자동으로 표시됩니다:</p>
       <ul style={{ paddingLeft: 18, marginTop: 6 }}>
         <li>호기별 작업 시간 막대그래프 (로딩/이동/언로딩/회수 색상 구분)</li>
@@ -263,26 +299,26 @@ E/V 부하율(%) = (평균 1회 × 시간당 공급횟수) ÷ (3600 × 가중치
 
 const AreaContent = () => (
   <>
-    <Section title="이 모듈은 언제 쓰나요?">
+    <Section title={lwoText('이 모듈은 언제 쓰나요?')}>
       <p>공장을 여러 구역으로 나눠 <b>면적 사용 효율</b>과 <b>적재 체적(높이) 효율</b>을 동시에 분석합니다. 공간 재배치 검토 시 활용.</p>
     </Section>
 
-    <Section title="입력 절차">
-      <Step n="1" title="공장 전체 치수">공장 가로·세로(m), 공장 사진(선택).</Step>
-      <Step n="2" title="구역 추가">+ 구역 버튼으로 1구역, 2구역, …을 추가. 각 구역의 가로·세로·사진 입력.</Step>
-      <Step n="3" title="적재 항목 입력">
+    <Section title={lwoText('입력 절차')}>
+      <Step n="1" title={lwoText('공장 전체 치수')}>공장 가로·세로(m), 공장 사진(선택).</Step>
+      <Step n="2" title={lwoText('구역 추가')}>+ 구역 버튼으로 1구역, 2구역, …을 추가. 각 구역의 가로·세로·사진 입력.</Step>
+      <Step n="3" title={lwoText('적재 항목 입력')}>
         각 구역의 실제 적재물(박스/파렛트/대차/Rack/기타)을:
         <ul style={{ marginTop: 6, paddingLeft: 18 }}>
           <li>종류, 개수, 가로(m), 세로(m)</li>
           <li><b>최저 높이</b> (전체 적재 중 가장 낮은 적재 높이, m)</li>
           <li><b>최고 높이</b> (가장 높은 적재 높이, m)</li>
-          <li><b>최고 높이 점유율</b> (0.5~1.0, 최고 적재 높이 대비 점유 수준 — 통상 0.8)</li>
+          <li><b>{lwoText('최고 높이 점유율')}</b> (0.5~1.0, 최고 적재 높이 대비 점유 수준 — 통상 0.8)</li>
           <li>실 적재 사진 (선택)</li>
         </ul>
       </Step>
     </Section>
 
-    <Section title="자동 산출 공식">
+    <Section title={lwoText('자동 산출 공식')}>
       <Formula>{`구역 면적       = 가로 × 세로                       [m²]
 합계 면적       = 가로 × 세로 × 개수                [m²]
 면적 효율(%)    = 합계 면적 ÷ 구역 면적 × 100
@@ -292,8 +328,8 @@ const AreaContent = () => (
       <Tip>예: 최고 5.0 m, 최저 0.5 m, 최고 높이 점유율 0.5 → 체적 손실율 45%. 사용율 55%.</Tip>
     </Section>
 
-    <Section title="결과 시각화">
-      <p>모듈 하단에 <b>구역별 면적 효율 분석</b> 막대그래프가 자동으로 표시됩니다:</p>
+    <Section title={lwoText('결과 시각화')}>
+      <p>모듈 하단에 <b>{lwoText('구역별 면적 효율 분석')}</b> 막대그래프가 자동으로 표시됩니다:</p>
       <ul style={{ paddingLeft: 18, marginTop: 6 }}>
         <li>각 구역의 효율(%)을 막대로 비교</li>
         <li>실제 사용 면적 / 구역 전체 면적 동시 표시</li>
@@ -306,37 +342,37 @@ const AreaContent = () => (
 
 const InventoryContent = () => (
   <>
-    <Section title="이 모듈은 언제 쓰나요?">
-      <p><b>UPH 기준 재고</b> 탭에서 고객사로 공급하는 물량이 부족하지 않도록 적정 재고 보관량을 계산합니다. 부족/잉여 차이의 절대값 + 운반 리드타임 + 고객사 운영 재고를 합산합니다.</p>
+    <Section title={lwoText('이 모듈은 언제 쓰나요?')}>
+      <p><b>{lwoText('UPH 기준 재고')}</b> 탭에서 고객사로 공급하는 물량이 부족하지 않도록 적정 재고 보관량을 계산합니다. 부족/잉여 차이의 절대값 + 운반 리드타임 + 고객사 운영 재고를 합산합니다.</p>
     </Section>
 
-    <Section title="4단계 입력">
-      <Step n="1" title="① 자사 기초 재고 — 고객/자사 라인">
+    <Section title={lwoText('4단계 입력')}>
+      <Step n="1" title={lwoText('① 자사 기초 재고 — 고객/자사 라인')}>
         고객 주간/야간 UPH 및 작업 시간, 자사 주간/야간 UPH 및 작업 시간 입력.<br/>
         → <b>일일 부족/잉여 차이 = 고객 일일 − 자사 일일</b>. 최종 재고 계산에는 절대값을 적용합니다.
       </Step>
-      <Step n="2" title="② 운반 리드타임 → 수량 환산">
+      <Step n="2" title={lwoText('② 운반 리드타임 → 수량 환산')}>
         4가지 시간(초)을 입력하면 자동으로 수량(대)으로 환산됩니다:
         <ul style={{ marginTop: 6, paddingLeft: 18 }}>
-          <li><b>숙성 시간</b>: 자사에서 출하 전 보관 시간</li>
+          <li><b>{lwoText('숙성 시간')}</b>: 자사에서 출하 전 보관 시간</li>
           <li><b>안심 재고 시간 (정책성)</b>: 운반 사고/설비 고장/차량 수배 등 대비</li>
           <li><b>Depot ~ 상차 시간</b>: 출하 대기 + 상차 시간</li>
           <li><b>자사 ~ 고객 이동 시간</b>: 물류 운반 시간</li>
         </ul>
       </Step>
-      <Step n="3" title="③ 고객사 운영 재고">
+      <Step n="3" title={lwoText('③ 고객사 운영 재고')}>
         <ul style={{ marginTop: 6, paddingLeft: 18 }}>
           <li><b>Dock ~ Depot 하차 시간</b>: 고객 측 하역 시간</li>
-          <li><b>대기 시간</b>: 고객 조립 라인 투입 전 보관 시간</li>
+          <li><b>{lwoText('대기 시간')}</b>: 고객 조립 라인 투입 전 보관 시간</li>
           <li><b>고객 안전 재고 시간</b>: 7대 로스 감안</li>
         </ul>
       </Step>
-      <Step n="4" title="④ Total 적정 재고 = ① 절대값 + ② + ③">
+      <Step n="4" title={lwoText('④ Total 적정 재고 = ① 절대값 + ② + ③')}>
         자동 합산되어 최하단에 표시됩니다.
       </Step>
     </Section>
 
-    <Section title="자동 산출 공식">
+    <Section title={lwoText('자동 산출 공식')}>
       <Formula>{`고객 일일 생산   = 주간(UPH × 시간) + 야간(UPH × 시간)
 자사 일일 생산   = 주간(UPH × 시간) + 야간(UPH × 시간)
 일일 부족/잉여 차이 = 고객 일일 − 자사 일일
@@ -349,7 +385,7 @@ const InventoryContent = () => (
 Total 적정 재고 = 적용 수량 + 리드타임 재고 + 운영 재고`}</Formula>
     </Section>
 
-    <Section title="용어 정리">
+    <Section title={lwoText('용어 정리')}>
       <Table
         headers={['용어', '설명']}
         rows={[
@@ -364,7 +400,7 @@ Total 적정 재고 = 적용 수량 + 리드타임 재고 + 운영 재고`}</For
       <Tip>모든 시간 입력은 <b>초(sec)</b> 단위입니다. 1시간 = 3600초.</Tip>
     </Section>
 
-    <Section title="적정 Space 산출 (보너스)">
+    <Section title={lwoText('적정 Space 산출 (보너스)')}>
       <p>Total 적정 재고 수량을 <b>실제 창고 바닥 면적(m²)</b>으로 환산합니다.</p>
       <Formula>{`1단 면적     = 가로 × 세로                       [m²]
 필요 바닥 면적 = 1단 × 적정 재고 ÷ 높이(단)         [m²]
@@ -376,11 +412,11 @@ Total 적정 재고 = 적용 수량 + 리드타임 재고 + 운영 재고`}</For
 
 const InvStatsContent = () => (
   <>
-    <Section title="이 모듈은 언제 쓰나요?">
+    <Section title={lwoText('이 모듈은 언제 쓰나요?')}>
       <p>이론적 산식 대신 <b>실제 운영 데이터(생산·출하·재고)</b>를 통계적으로 분석해 적정 재고를 산출합니다. 일별 실적이 누적될수록 정확도가 높아집니다.</p>
     </Section>
 
-    <Section title="통계적 방법">
+    <Section title={lwoText('통계적 방법')}>
       <Formula>{`적정 재고 = 평균 소요량 + (안전계수 × 소요량 편차)
          = 평균 출하량 + Z × 출하량 표준편차`}</Formula>
       <p>안전계수 <b>Z</b>는 목표 서비스율(품절 없이 충족할 확률)에 따라 결정됩니다.</p>
@@ -397,14 +433,14 @@ const InvStatsContent = () => (
       />
     </Section>
 
-    <Section title="사용 절차">
-      <Step n="1" title="제품 / 모델 선택">상단 드롭다운에서 분석 대상 선택. ⚙ <b>관리</b> 버튼으로 추가/이름변경/삭제. 제품·모델 조합별로 데이터가 <b>독립 저장</b>됩니다.</Step>
-      <Step n="2" title="일자별 실적 입력">+ 일자 추가 또는 <b>엑셀 일괄 입력</b>으로 날짜·생산량·출하량·재고량을 입력합니다. 최소 7일, 권장 30일 이상.</Step>
-      <Step n="3" title="자동 산출 확인">통계(평균·표편·Min·Max) + 99.9%/99.5% 적정재고 + 재고 일수 자동 계산.</Step>
-      <Step n="4" title="추이 차트 확인">2일 이상 입력 시 생산/출하/재고의 라인 차트 자동 표시.</Step>
+    <Section title={lwoText('사용 절차')}>
+      <Step n="1" title={lwoText('제품 / 모델 선택')}>상단 드롭다운에서 분석 대상 선택. ⚙ <b>{lwoText('관리')}</b> 버튼으로 추가/이름변경/삭제. 제품·모델 조합별로 데이터가 <b>독립 저장</b>됩니다.</Step>
+      <Step n="2" title={lwoText('일자별 실적 입력')}>+ 일자 추가 또는 <b>{lwoText('엑셀 일괄 입력')}</b>으로 날짜·생산량·출하량·재고량을 입력합니다. 최소 7일, 권장 30일 이상.</Step>
+      <Step n="3" title={lwoText('자동 산출 확인')}>통계(평균·표편·Min·Max) + 99.9%/99.5% 적정재고 + 재고 일수 자동 계산.</Step>
+      <Step n="4" title={lwoText('추이 차트 확인')}>2일 이상 입력 시 생산/출하/재고의 라인 차트 자동 표시.</Step>
     </Section>
 
-    <Section title="결과 해석">
+    <Section title={lwoText('결과 해석')}>
       <Formula>{`99.9% 적정재고 = 평균 출하량 + 출하량 표편 × 3.09
 99.5% 적정재고 = 평균 출하량 + 출하량 표편 × 2.575
 재고 일수      = 적정재고 ÷ 평균 출하량           [일]`}</Formula>
@@ -413,7 +449,7 @@ const InvStatsContent = () => (
       <Tip type="warn">데이터가 1~2일뿐이면 표준편차가 의미가 없어 산출 신뢰도가 낮습니다.</Tip>
     </Section>
 
-    <Section title="기존 적정 재고 모듈과 차이">
+    <Section title={lwoText('기존 적정 재고 모듈과 차이')}>
       <Table
         headers={['항목', '📦 UPH 기준 재고', '📈 실적 기준 재고']}
         rows={[
@@ -429,22 +465,22 @@ const InvStatsContent = () => (
 
 const AmrContent = () => (
   <>
-    <Section title="이 모듈은 언제 쓰나요?">
+    <Section title={lwoText('이 모듈은 언제 쓰나요?')}>
       <p>공장 운영에 필요한 <b>AMR(자율주행 로봇) 대수</b>를 산출합니다. 생산 Tact와 AMR 왕복 시간을 비교해 최소 필요 대수 + 예비를 계산. <b>여러 아이템을 여러 구역에서 공급</b>하는 경우, 아이템(구역)별로 입력하면 원단위를 합산해 총 대수를 산출합니다.</p>
     </Section>
 
-    <Section title="입력 절차">
-      <Step n="1" title="아이템(구역) 추가 / 선택">
-        상단 <b>아이템 탭</b>에서 분석할 아이템(구역)을 선택하거나 <b>+ 아이템 추가</b>로 늘립니다. 아이템별 생산·운행 조건이 독립 저장되고, 각 원단위가 합산됩니다.
+    <Section title={lwoText('입력 절차')}>
+      <Step n="1" title={lwoText('아이템(구역) 추가 / 선택')}>
+        상단 <b>아이템 탭</b>에서 분석할 아이템(구역)을 선택하거나 <b>{lwoText('+ 아이템 추가')}</b>로 늘립니다. 아이템별 생산·운행 조건이 독립 저장되고, 각 원단위가 합산됩니다.
       </Step>
-      <Step n="2" title="생산 수량 정보">
+      <Step n="2" title={lwoText('생산 수량 정보')}>
         <ul style={{ marginTop: 6, paddingLeft: 18 }}>
-          <li><b>Tact Time (초)</b>: 1개 생산에 걸리는 표준 시간</li>
-          <li><b>회수율 (%)</b>: 양품 비율 (예: 90%)</li>
-          <li><b>장입 수량 (개/회)</b>: AMR 1회당 운반 가능한 제품 수</li>
+          <li><b>{lwoText('Tact Time (초)')}</b>: 1개 생산에 걸리는 표준 시간</li>
+          <li><b>{lwoText('회수율 (%)')}</b>: 양품 비율 (예: 90%)</li>
+          <li><b>{lwoText('장입 수량 (개/회)')}</b>: AMR 1회당 운반 가능한 제품 수</li>
         </ul>
       </Step>
-      <Step n="3" title="AMR 운행 정보">
+      <Step n="3" title={lwoText('AMR 운행 정보')}>
         <ul style={{ marginTop: 6, paddingLeft: 18 }}>
           <li>AMR Speed (m/s) — 기종 사양 (통상 1.0~2.0)</li>
           <li>이동 거리 (m, 편도) — 출발점에서 도착점까지</li>
@@ -452,15 +488,15 @@ const AmrContent = () => (
           <li>언로딩 횟수 / 시간 — 1 사이클에서 짐 내리기</li>
         </ul>
       </Step>
-      <Step n="4" title="AMR 여유율 / 예비 대수 (전체 합산에 1회 적용)">
+      <Step n="4" title={lwoText('AMR 여유율 / 예비 대수 (전체 합산에 1회 적용)')}>
         <ul style={{ marginTop: 6, paddingLeft: 18 }}>
-          <li><b>AMR 여유율</b>: 충전/수리·동선 여유를 반영하는 계수 (예: 1.2)</li>
+          <li><b>{lwoText('AMR 여유율')}</b>: 충전/수리·동선 여유를 반영하는 계수 (예: 1.2)</li>
           <li><b>Spare (예비)</b>: 갑작스러운 고장 대비 추가 대수 (통상 1)</li>
         </ul>
       </Step>
     </Section>
 
-    <Section title="자동 산출 공식">
+    <Section title={lwoText('자동 산출 공식')}>
       <Formula>{`[아이템(구역)별]
 UPH               = (3600 ÷ Tact) × 회수율
 AMR 운행 횟수     = UPH ÷ 장입 수량
@@ -476,7 +512,7 @@ AMR 원단위        = 총 왕복시간 ÷ Cycle
       <Tip>여러 아이템을 합산: 예) 0.2 + 0.4 + 0.2 = 0.8대 → 여유율·올림·Spare는 합산 원단위에 한 번만 적용. ⌈ ⌉ 는 올림(ceiling).</Tip>
     </Section>
 
-    <Section title="계산 예시">
+    <Section title={lwoText('계산 예시')}>
       <Table
         headers={['항목', '입력값']}
         rows={[
@@ -507,42 +543,42 @@ Cycle = 3600 / 10.8 ≈ 333초
 
 const PersonnelPlanContent = () => (
   <>
-    <Section title="이 모듈은 언제 쓰나요?">
+    <Section title={lwoText('이 모듈은 언제 쓰나요?')}>
       <p>적재 Item별 피킹·언로딩·이동 시간과 일 작업 시간을 기준으로 <b>물류 운반에 필요한 적정 인원</b>을 산출합니다. 참조 엑셀과 같은 컬럼 구조로 일괄 입력할 수 있습니다.</p>
     </Section>
 
-    <Section title="입력 절차">
-      <Step n="1" title="Item 추가/선택">상단 Item 탭에서 분석할 적재 Item을 선택합니다. <b>+ Item 추가</b>로 여러 항목을 분리해 계산합니다.</Step>
-      <Step n="2" title="1회 운반 시간 입력">피킹 시간, 언로딩 시간, 1회 이동거리, 1회 이동 속도를 입력하면 1회 이동 시간과 1회 운반 시간이 자동 계산됩니다.</Step>
-      <Step n="3" title="일 운반 시간 입력">시간당 운반 횟수와 일 작업 시간을 입력하면 일 운반 횟수와 일 운반 시간이 자동 계산됩니다.</Step>
-      <Step n="4" title="표준 작업 시간 적용">표준작업 여유율을 입력하면 표준 운반 작업 시간과 최종 적정 인원이 산출됩니다.</Step>
+    <Section title={lwoText('입력 절차')}>
+      <Step n="1" title={lwoText('Item 추가/선택')}>상단 Item 탭에서 분석할 적재 Item을 선택합니다. <b>{lwoText('+ Item 추가')}</b>로 여러 항목을 분리해 계산합니다.</Step>
+      <Step n="2" title={lwoText('1회 운반 시간 입력')}>피킹 시간, 언로딩 시간, 1회 이동거리, 1회 이동 속도를 입력하면 1회 이동 시간과 1회 운반 시간이 자동 계산됩니다.</Step>
+      <Step n="3" title={lwoText('일 운반 시간 입력')}>시간당 운반 횟수와 일 작업 시간을 입력하면 일 운반 횟수와 일 운반 시간이 자동 계산됩니다.</Step>
+      <Step n="4" title={lwoText('표준 작업 시간 적용')}>표준작업 여유율을 입력하면 표준 운반 작업 시간과 최종 적정 인원이 산출됩니다.</Step>
     </Section>
 
-    <Section title="자동 산출 공식">
+    <Section title={lwoText('자동 산출 공식')}>
       <Formula>{`이동 시간       = 왕복 이동 거리 ÷ 이동 속도
 물류 운반 시간   = 피킹 시간 + 언로딩 시간 + 이동 시간
 일 운반 횟수     = 시간당 운반 횟수 × 일 작업 시간
 일 운반 시간     = 물류 운반 시간 × 일 운반 횟수
 표준 운반 작업 시간 = 일 작업 시간 × 3600초 × 표준작업 여유율
 최종 적정 인원     = 일 운반 시간 ÷ 표준 운반 작업 시간`}</Formula>
-      <Tip>휴대폰 하단 탭에서는 공간을 줄이기 위해 <b>물류인원</b>으로 표시됩니다.</Tip>
+      <Tip>휴대폰 하단 탭에서는 공간을 줄이기 위해 <b>{lwoText('물류인원')}</b>으로 표시됩니다.</Tip>
     </Section>
   </>
 )
 
 const WarehouseAreaContent = () => (
   <>
-    <Section title="이 모듈은 언제 쓰나요?">
+    <Section title={lwoText('이 모듈은 언제 쓰나요?')}>
       <p><b>UPH 기준</b> 또는 <b>용기 사이즈 기준</b>을 선택해 Item별 물류 필요 면적을 산출합니다. 참조 엑셀 양식과 동일한 구조로 일괄 입력할 수 있습니다.</p>
     </Section>
 
-    <Section title="입력 절차">
-      <Step n="1" title="기준 선택">상단에서 <b>필요면적(UPH 기준)</b> 또는 <b>필요면적(용기 사이즈 기준)</b>을 선택합니다.</Step>
-      <Step n="2" title="Item별 입력">Item 탭에서 적재 Item과 적재 종류를 입력하고, UPH 기준은 UPH·작업 시간·수용수·<b>용기 Size 가로/세로</b>·<b>면적 여유율</b>을, 용기 기준은 용기 개수·치수를 입력합니다.</Step>
-      <Step n="3" title="합계 확인">항목별 최종 면적과 <b>물류 필요 면적 합계</b>를 확인합니다.</Step>
+    <Section title={lwoText('입력 절차')}>
+      <Step n="1" title={lwoText('기준 선택')}>상단에서 <b>{lwoText('필요면적(UPH 기준)')}</b> 또는 <b>{lwoText('필요면적(용기 사이즈 기준)')}</b>을 선택합니다.</Step>
+      <Step n="2" title={lwoText('Item별 입력')}>Item 탭에서 적재 Item과 적재 종류를 입력하고, UPH 기준은 UPH·작업 시간·수용수·<b>용기 Size 가로/세로</b>·<b>면적 여유율</b>을, 용기 기준은 용기 개수·치수를 입력합니다.</Step>
+      <Step n="3" title={lwoText('합계 확인')}>항목별 최종 면적과 <b>{lwoText('물류 필요 면적 합계')}</b>를 확인합니다.</Step>
     </Section>
 
-    <Section title="자동 산출 공식">
+    <Section title={lwoText('자동 산출 공식')}>
       <Formula>{`[UPH 기준]
 일 생산수량 = UPH × 작업 시간
 일 적재 수량 = 일 생산수량 ÷ 수용수
@@ -553,42 +589,42 @@ const WarehouseAreaContent = () => (
 [용기 사이즈 기준]
 바닥 적재 수량 = 가로 개수 × 세로 개수
 필요 면적 = 바닥 적재 수량 × 단위 면적 × 여유율`}</Formula>
-      <Tip>면적 여유율은 <b>수동 대차 220% / AMR 대차 280% / Rack 3단 박스 84%</b> 프리셋 또는 직접 입력. 휴대폰 하단 탭에서는 <b>창고면적</b>으로 표시됩니다.</Tip>
+      <Tip>면적 여유율은 <b>수동 대차 220% / AMR 대차 280% / Rack 3단 박스 84%</b> 프리셋 또는 직접 입력. 휴대폰 하단 탭에서는 <b>{lwoText('창고면적')}</b>으로 표시됩니다.</Tip>
     </Section>
   </>
 )
 
 const AutomationRateContent = () => (
   <>
-    <Section title="이 모듈은 언제 쓰나요?">
-      <p>자동화 적용 Item 수와 Re-Handling Item 수를 기준으로 <b>물류 자동화율</b>과 <b>Re-Handling율</b>을 함께 확인합니다.</p>
+    <Section title={lwoText('이 모듈은 언제 쓰나요?')}>
+      <p>자동화 적용 Item 수와 Re-Handling Item 수를 기준으로 <b>{lwoText('물류 자동화율')}</b>과 <b>{lwoText('Re-Handling율')}</b>을 함께 확인합니다.</p>
     </Section>
 
-    <Section title="입력 절차">
-      <Step n="1" title="자동화 Item 입력">전체 Item 수와 자동화 적용 Item 수를 입력합니다.</Step>
-      <Step n="2" title="Re-Handling 입력">총 입고 Item 수와 Re-Handling Item 수를 입력합니다.</Step>
-      <Step n="3" title="현장 사진 첨부">필요하면 자동화 구간 또는 Re-Handling 구간 사진을 첨부해 근거를 남깁니다.</Step>
+    <Section title={lwoText('입력 절차')}>
+      <Step n="1" title={lwoText('자동화 Item 입력')}>전체 Item 수와 자동화 적용 Item 수를 입력합니다.</Step>
+      <Step n="2" title={lwoText('Re-Handling 입력')}>총 입고 Item 수와 Re-Handling Item 수를 입력합니다.</Step>
+      <Step n="3" title={lwoText('현장 사진 첨부')}>필요하면 자동화 구간 또는 Re-Handling 구간 사진을 첨부해 근거를 남깁니다.</Step>
     </Section>
 
-    <Section title="자동 산출 공식">
+    <Section title={lwoText('자동 산출 공식')}>
       <Formula>{`물류 자동화율(%)  = 자동화 적용 Item 수 ÷ 총 입고 Item 수 × 100
 Re-Handling율(%) = Re-Handling Item 수 ÷ 총 입고 Item 수 × 100`}</Formula>
-      <Tip>휴대폰 하단 탭에서는 <b>자동화율</b>로 표시됩니다.</Tip>
+      <Tip>휴대폰 하단 탭에서는 <b>{lwoText('자동화율')}</b>로 표시됩니다.</Tip>
     </Section>
   </>
 )
 
 const CONTENTS = {
-  intro: <IntroContent />,
-  worker: <WorkerContent />,
-  elevator: <ElevatorContent />,
-  area: <AreaContent />,
-  inventory: <InventoryContent />,
-  invStats: <InvStatsContent />,
-  amr: <AmrContent />,
-  personnelPlan: <PersonnelPlanContent />,
-  warehouseArea: <WarehouseAreaContent />,
-  automationRate: <AutomationRateContent />
+  intro: IntroContent,
+  worker: WorkerContent,
+  elevator: ElevatorContent,
+  area: AreaContent,
+  inventory: InventoryContent,
+  invStats: InvStatsContent,
+  amr: AmrContent,
+  personnelPlan: PersonnelPlanContent,
+  warehouseArea: WarehouseAreaContent,
+  automationRate: AutomationRateContent
 }
 
 export default function HelpModal({ open, onClose }) {
@@ -606,6 +642,9 @@ export default function HelpModal({ open, onClose }) {
   }, [open, onClose])
 
   if (!open) return null
+
+  const Content = CONTENTS[activeTab]
+  const language = getLanguage()
 
   return (
     <div className="modal-overlay" onClick={onClose} style={{ padding: 12 }}>
@@ -635,9 +674,9 @@ export default function HelpModal({ open, onClose }) {
           <div>
             <div style={{ fontSize: '1.1rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8 }}>
               <span className="brand-badge">NOL-IS</span>
-              <span>LWO 사용 설명서</span>
+              <span>{lwoText('LWO 사용 설명서')}</span>
             </div>
-            <div style={{ fontSize: '0.78rem', opacity: 0.9, marginTop: 2 }}>Logistics Work Optimizer 상세 가이드 + 공식 + 예시</div>
+            <div style={{ fontSize: '0.78rem', opacity: 0.9, marginTop: 2 }}>{lwoText('Logistics Work Optimizer 상세 가이드 + 공식 + 예시')}</div>
           </div>
           <button onClick={onClose} style={{
             background: 'rgba(255,255,255,0.15)',
@@ -679,14 +718,14 @@ export default function HelpModal({ open, onClose }) {
                 cursor: 'pointer'
               }}
             >
-              <span style={{ marginRight: 4 }}>{t.icon}</span>{t.title}
+              <span style={{ marginRight: 4 }}>{t.icon}</span>{lwoText(t.title)}
             </button>
           ))}
         </div>
 
         {/* 본문 */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '6px 22px 28px', background: 'white' }}>
-          {CONTENTS[activeTab]}
+          {language === 'Korean' ? <Content /> : <TranslatedHelp tab={activeTab} language={language} />}
         </div>
       </div>
     </div>

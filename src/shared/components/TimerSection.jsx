@@ -1,3 +1,4 @@
+import { lwoText } from '../../i18n'
 import { useState, useEffect } from 'react'
 import { fmtTime, getGap } from '../utils/common'
 
@@ -22,14 +23,14 @@ export default function TimerSection({ title, start, end, onStart, onEnd, onDele
       {onDelete && (
         <button
           onClick={onDelete}
-          aria-label="삭제"
+          aria-label={lwoText('삭제')}
           style={{
             position: 'absolute', top: '10px', right: '10px',
             width: 28, height: 28, padding: 0,
             background: 'transparent', border: 'none',
             fontSize: '1.1rem', color: '#9C8E94', cursor: 'pointer', zIndex: 10
           }}
-          title="삭제"
+          title={lwoText('삭제')}
         >🗑️</button>
       )}
 

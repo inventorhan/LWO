@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { lwoText } from '../../i18n'
 
 /**
  * 섹션 카드 옆에 붙이는 ? 도움말 버튼.
@@ -32,8 +33,8 @@ export default function HelpHint({ title, children }) {
       <button
         type="button"
         onClick={(e) => { e.stopPropagation(); setOpen(true) }}
-        title={`${title} 도움말`}
-        aria-label={`${title} 도움말 열기`}
+        title={lwoText('{title} 도움말', { title })}
+        aria-label={lwoText('{title} 도움말 열기', { title })}
         style={{
           flexShrink: 0,
           width: 22, height: 22,

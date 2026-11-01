@@ -1,3 +1,4 @@
+import { lwoText } from '../i18n'
 import { useState } from 'react'
 import ExcelJS from 'exceljs'
 import { n, fmtN } from '../shared/utils/common'
@@ -173,7 +174,7 @@ export default function LogisticsPersonnel({ data, updateData }) {
     setActiveIdx(next.length - 1)
   }
   const removeItem = (id) => {
-    if (window.confirm('이 Item을 삭제하시겠습니까?')) {
+    if (window.confirm(lwoText('이 Item을 삭제하시겠습니까?'))) {
       if (items.length <= 1) {
         setItems([{ ...newItem(), itemName: 'Item-1' }])
         setActiveIdx(0)
@@ -187,14 +188,14 @@ export default function LogisticsPersonnel({ data, updateData }) {
     try {
       const imported = await readWorkbook(file)
       if (imported.length === 0) {
-        window.alert('엑셀에서 물류 필요 인원 입력 컬럼을 찾지 못했습니다.')
+        window.alert(lwoText('엑셀에서 물류 필요 인원 입력 컬럼을 찾지 못했습니다.'))
         return
       }
       setItems(imported)
       setActiveIdx(0)
     } catch (err) {
       console.error(err)
-      window.alert('엑셀 파일을 읽는 중 오류가 발생했습니다.')
+      window.alert(lwoText('엑셀 파일을 읽는 중 오류가 발생했습니다.'))
     }
   }
 
@@ -203,29 +204,25 @@ export default function LogisticsPersonnel({ data, updateData }) {
 
   return (
     <div style={{ animation: 'fadeIn 0.3s ease' }}>
-      <div className="module-title">물류 적정 인원 선정</div>
+      <div className="module-title">{lwoText('물류 적정 인원 선정')}</div>
 
       <div className="section-card">
         <div className="module-action-bar">
           <div className="section-title" style={{ marginBottom: 0, border: 'none', padding: 0 }}>
-            Item별 필요 인원 산출
-            <HelpHint title="물류 적정 인원">
-              <HintFormula>{`1회 이동 시간 = 1회 이동거리 ÷ 1회 이동속도
-1회 운반 시간 = 피킹 시간 + 언로딩 시간 + 이동 시간
-일 운반 시간 = 1회 운반 시간 × 시간당 운반 횟수 × 일 작업시간
-표준 운반 작업 시간 = 일 작업시간 × 3600 × 표준작업 여유율
-물류 적정 인원 = 일 운반 시간 ÷ 표준 운반 작업 시간`}</HintFormula>
-              <HintNote>참조 엑셀의 필요인원산출 시트와 같은 컬럼 구조를 사용합니다.</HintNote>
+            {lwoText('Item별 필요 인원 산출')}
+            <HelpHint title={lwoText('물류 적정 인원')}>
+              <HintFormula>{lwoText('1회 이동 시간 = 1회 이동거리 ÷ 1회 이동속도\n1회 운반 시간 = 피킹 시간 + 언로딩 시간 + 이동 시간\n일 운반 시간 = 1회 운반 시간 × 시간당 운반 횟수 × 일 작업시간\n표준 운반 작업 시간 = 일 작업시간 × 3600 × 표준작업 여유율\n물류 적정 인원 = 일 운반 시간 ÷ 표준 운반 작업 시간')}</HintFormula>
+              <HintNote>{lwoText('참조 엑셀의 필요인원산출 시트와 같은 컬럼 구조를 사용합니다.')}</HintNote>
             </HelpHint>
           </div>
           <div className="action-row">
             <label className="btn btn-soft">
-              엑셀 일괄 입력
+              {lwoText('엑셀 일괄 입력')}
               <input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 style={{ display: 'none' }}
                 onChange={e => { if (e.target.files?.[0]) importExcel(e.target.files[0]); e.target.value = '' }} />
             </label>
-            <button className="btn btn-soft" onClick={downloadTemplate}>엑셀 다운로드</button>
+            <button className="btn btn-soft" onClick={downloadTemplate}>{lwoText('엑셀 다운로드')}</button>
           </div>
         </div>
 
@@ -235,82 +232,82 @@ export default function LogisticsPersonnel({ data, updateData }) {
               {item.itemName || `Item-${idx + 1}`}
             </button>
           ))}
-          <button className="mini-tab add" onClick={addItem}>+ Item 추가</button>
+          <button className="mini-tab add" onClick={addItem}>{lwoText('+ Item 추가')}</button>
         </div>
 
         {active && (
           <div className="warehouse-item">
             <div className="warehouse-item__head">
               <strong>{active.itemName || `Item-${safeIdx + 1}`}</strong>
-              <button className="mini-btn" onClick={() => removeItem(active.id)}>삭제</button>
+              <button className="mini-btn" onClick={() => removeItem(active.id)}>{lwoText('삭제')}</button>
             </div>
             <div className="warehouse-flow">
               <div className="warehouse-group">
-                <div className="warehouse-group__title">기초 정보</div>
+                <div className="warehouse-group__title">{lwoText('기초 정보')}</div>
                 <div className="warehouse-row warehouse-row--compact">
-                  <LogisticsField label="적재 Item">
+                  <LogisticsField label={lwoText('적재 Item')}>
                     <input className="input-field" value={active.itemName}
-                      onChange={e => updateItem(active.id, { itemName: e.target.value })} placeholder="예: Lotte(BW)" />
+                      onChange={e => updateItem(active.id, { itemName: e.target.value })} placeholder={lwoText('예: Lotte(BW)')} />
                   </LogisticsField>
-                  <LogisticsField label="적재 종류">
+                  <LogisticsField label={lwoText('적재 종류')}>
                     <select className="input-field" value={active.loadType}
                       onChange={e => updateItem(active.id, { loadType: e.target.value })}>
-                      {LOAD_TYPES.map(v => <option key={v}>{v}</option>)}
+                      {LOAD_TYPES.map(v => <option key={v} value={v}>{lwoText(v)}</option>)}
                     </select>
                   </LogisticsField>
                 </div>
               </div>
 
               <div className="warehouse-group">
-                <div className="warehouse-group__title">1회 운반 시간 산출</div>
+                <div className="warehouse-group__title">{lwoText('1회 운반 시간 산출')}</div>
                 <div className="warehouse-row">
-                  <LogisticsField label="1회 피킹 시간(sec)">
+                  <LogisticsField label={lwoText('1회 피킹 시간(sec)')}>
                     <input className="input-field" type="number" min={0} value={active.pickTime}
                       onChange={e => updateItem(active.id, { pickTime: e.target.value })} />
                   </LogisticsField>
-                  <LogisticsField label="1회 언로딩 시간(sec)">
+                  <LogisticsField label={lwoText('1회 언로딩 시간(sec)')}>
                     <input className="input-field" type="number" min={0} value={active.unloadTime}
                       onChange={e => updateItem(active.id, { unloadTime: e.target.value })} />
                   </LogisticsField>
                 </div>
                 <div className="warehouse-row">
-                  <LogisticsField label="1회 이동거리(m)">
+                  <LogisticsField label={lwoText('1회 이동거리(m)')}>
                     <input className="input-field" type="number" min={0} value={active.distance}
                       onChange={e => updateItem(active.id, { distance: e.target.value })} />
                   </LogisticsField>
-                  <LogisticsField label="1회 이동 속도(m/sec)">
+                  <LogisticsField label={lwoText('1회 이동 속도(m/sec)')}>
                     <input className="input-field" type="number" min={0} step="0.1" value={active.speed}
                       onChange={e => updateItem(active.id, { speed: e.target.value })} />
                   </LogisticsField>
                 </div>
-                <Result label="1회 이동 시간 = 이동거리 ÷ 이동속도" value={fmtN(calc.moveTime, '초', 1)} tone="blue" />
-                <Result label="1회 운반 시간 = 피킹 + 언로딩 + 이동" value={fmtN(calc.transportTime, '초', 1)} tone="final" />
+                <Result label={lwoText('1회 이동 시간 = 이동거리 ÷ 이동속도')} value={fmtN(calc.moveTime, '초', 1)} tone="blue" />
+                <Result label={lwoText('1회 운반 시간 = 피킹 + 언로딩 + 이동')} value={fmtN(calc.transportTime, '초', 1)} tone="final" />
               </div>
 
               <div className="warehouse-group">
-                <div className="warehouse-group__title">일 운반 시간 산출</div>
+                <div className="warehouse-group__title">{lwoText('일 운반 시간 산출')}</div>
                 <div className="warehouse-row">
-                  <LogisticsField label="시간당 운반 횟수">
+                  <LogisticsField label={lwoText('시간당 운반 횟수')}>
                     <input className="input-field" type="number" min={0} value={active.tripsPerHour}
                       onChange={e => updateItem(active.id, { tripsPerHour: e.target.value })} />
                   </LogisticsField>
-                  <LogisticsField label="일 작업 시간(h)">
+                  <LogisticsField label={lwoText('일 작업 시간(h)')}>
                     <input className="input-field" type="number" min={0} step="0.5" value={active.hoursPerDay}
                       onChange={e => updateItem(active.id, { hoursPerDay: e.target.value })} />
                   </LogisticsField>
                 </div>
-                <Result label="일 운반 횟수 = 시간당 운반 횟수 × 일 작업 시간" value={fmtN(calc.dailyTrips, '회', 0)} tone="blue" />
-                <Result label="일 운반 시간 = 1회 운반 시간 × 일 운반 횟수" value={fmtN(calc.dailyTransportTime, '초', 0)} tone="final" />
+                <Result label={lwoText('일 운반 횟수 = 시간당 운반 횟수 × 일 작업 시간')} value={fmtN(calc.dailyTrips, '회', 0)} tone="blue" />
+                <Result label={lwoText('일 운반 시간 = 1회 운반 시간 × 일 운반 횟수')} value={fmtN(calc.dailyTransportTime, '초', 0)} tone="final" />
               </div>
 
               <div className="warehouse-group">
-                <div className="warehouse-group__title">표준 작업 시간 산출</div>
-                <LogisticsField label="표준 작업 여유율">
+                <div className="warehouse-group__title">{lwoText('표준 작업 시간 산출')}</div>
+                <LogisticsField label={lwoText('표준 작업 여유율')}>
                   <input className="input-field" type="number" min={0} step="0.1" value={active.allowance}
                     onChange={e => updateItem(active.id, { allowance: e.target.value })} />
                 </LogisticsField>
-                <Result label="표준 운반 작업 시간 = 일 작업 시간 × 3600 × 표준작업 여유율" value={fmtN(calc.standardWorkTime, '초', 0)} tone="blue" />
-                <Result label="최종 적정 인원 = 일 운반 시간 ÷ 표준 작업 시간" value={fmtN(calc.personnel, '명', 2)} tone="final" />
+                <Result label={lwoText('표준 운반 작업 시간 = 일 작업 시간 × 3600 × 표준작업 여유율')} value={fmtN(calc.standardWorkTime, '초', 0)} tone="blue" />
+                <Result label={lwoText('최종 적정 인원 = 일 운반 시간 ÷ 표준 작업 시간')} value={fmtN(calc.personnel, '명', 2)} tone="final" />
               </div>
             </div>
           </div>
@@ -320,7 +317,7 @@ export default function LogisticsPersonnel({ data, updateData }) {
       <div className="section-card" style={{ background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 100%)', borderColor: '#334155', color: 'white' }}>
         <div className="section-title" style={{ color: 'white', borderBottomColor: 'rgba(255,255,255,0.15)' }}>Sub Total</div>
         <div className="result-box full-width tone-final">
-          <span className="result-box__label">전체 물류 적정 인원</span>
+          <span className="result-box__label">{lwoText('전체 물류 적정 인원')}</span>
           <span className="result-box__value">{fmtN(totalPersonnel, '명', 2)}</span>
         </div>
       </div>

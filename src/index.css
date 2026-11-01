@@ -168,6 +168,18 @@ body {
   flex-shrink: 0;
 }
 
+.language-select {
+  height: 36px;
+  padding: 0 6px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: var(--border-radius-sm);
+  background: #fff;
+  color: #0f172a;
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
 .header-btn {
   height: 36px;
   padding: 0 12px;
@@ -242,6 +254,23 @@ body {
     font-size: 1.05rem;
     line-height: 1;
     margin: 0;
+  }
+}
+
+@media (max-width: 420px) {
+  .app-header {
+    height: auto;
+    min-height: var(--header-h);
+    padding-block: 6px;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .header-left,
+  .header-right {
+    width: 100%;
+  }
+  .header-right {
+    justify-content: flex-end;
   }
 }
 

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { n, nOr, fmtN, calcArea, getGap } from '../src/shared/utils/common'
+import { syncLanguage } from '../src/i18n'
 import { initialState, loadStoredState, migrateAppState, resolveLengthUnit, saveStoredState } from '../src/store'
 
 describe('1. Common Utils (common.js)', () => {
@@ -21,6 +22,7 @@ describe('1. Common Utils (common.js)', () => {
   })
 
   it('fmtN() formats numbers and handles zero properly', () => {
+    syncLanguage('Korean')
     expect(fmtN(12.3456, '개', 2)).toBe('12.35개')
     expect(fmtN(100, '%', 1)).toBe('100%')
     expect(fmtN(null, '%', 1)).toBe('—')

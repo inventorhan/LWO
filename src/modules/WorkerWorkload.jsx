@@ -1,3 +1,4 @@
+import { lwoText } from '../i18n'
 import { useState } from 'react'
 import { getGap, nOr } from '../shared/utils/common'
 import TimerSection from '../shared/components/TimerSection'
@@ -63,7 +64,7 @@ function MiniLineChart({ labels, values, color }) {
         <path d={path} fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
         {points.map((p, i) => (
           <circle key={i} cx={p.x} cy={p.y} r="5" fill="white" stroke={color} strokeWidth="3">
-            <title>{`${labels[i]}: ${p.v.toFixed(1)}초`}</title>
+            <title>{lwoText('{label}: {value}초', { label: labels[i], value: p.v.toFixed(1) })}</title>
           </circle>
         ))}
       </svg>
@@ -91,7 +92,7 @@ function MiniBoxChart({ labels, samples, color }) {
               <line x1="17" y1={y(s.max)} x2="31" y2={y(s.max)} stroke="#1F1218" strokeWidth="1" />
               <rect x="11" y={boxTop} width="26" height={Math.max(4, boxBottom - boxTop)} fill="#F8FAFC" stroke={color} strokeWidth="2" />
               <line x1="11" y1={y(s.med)} x2="37" y2={y(s.med)} stroke="#1F1218" strokeWidth="1.5" />
-              <title>{`${labels[i]}: 중앙 ${s.med.toFixed(1)}초`}</title>
+              <title>{lwoText('{label}: 중앙 {value}초', { label: labels[i], value: s.med.toFixed(1) })}</title>
             </svg>
             <span>{labels[i]}</span>
           </div>
@@ -151,7 +152,7 @@ export default function WorkerWorkload({
 
   const handleDeleteCycle = (id) => {
     if (measurements.length <= 1) return
-    if (window.confirm(`${activeIndex}회차의 모든 측정 데이터가 삭제됩니다. 계속하시겠습니까?`)) {
+    if (window.confirm(lwoText('{cycle}회차의 모든 측정 데이터가 삭제됩니다. 계속하시겠습니까?', { cycle: activeIndex }))) {
       removeCycle(id)
       setUserSelectedCycleId(null)
     }
@@ -285,7 +286,7 @@ export default function WorkerWorkload({
       const allSamples = rows.flatMap(row => row.samples)
       return {
         ...metric,
-        labels: ['평균', ...rows.map(row => row.label)],
+        labels: [lwoText('평균'), ...rows.map(row => row.label)],
         samples: [allSamples, ...rows.map(row => row.samples)]
       }
     }
@@ -293,7 +294,7 @@ export default function WorkerWorkload({
     const cycleSamples = measurements.map(cycle => cycleMetric(cycle, metric.type))
     return {
       ...metric,
-      labels: ['평균', ...measurements.map((_, i) => `${i + 1}회`)],
+      labels: [lwoText('평균'), ...measurements.map((_, i) => lwoText('{number}회', { number: i + 1 }))],
       samples: [cycleSamples, ...cycleSamples.map(v => [v])]
     }
   })
@@ -305,7 +306,7 @@ export default function WorkerWorkload({
       <div style={{
         height: `${pct}%`, width: '100%', background: color,
         display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden'
-      }} title={`${label}: ${val.toFixed(1)}${unit}`}>
+      }} title={`${lwoText(label)}: ${val.toFixed(1)}${unit}`}>
         {pct > 12 && (
           <span style={{
             fontSize: '0.62rem', fontWeight: 800, color: 'white',
@@ -323,7 +324,7 @@ export default function WorkerWorkload({
       <div style={{
         width: `${pct}%`, height: '100%', background: color,
         display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden'
-      }} title={`${label}: ${val.toFixed(1)}${unit}`}>
+      }} title={`${lwoText(label)}: ${val.toFixed(1)}${unit}`}>
         {pct > 6 && (
           <span style={{
             fontSize: '0.65rem', fontWeight: 800, color: 'white',
@@ -336,45 +337,45 @@ export default function WorkerWorkload({
 
   return (
     <div style={{ animation: 'fadeIn 0.3s ease' }}>
-      <div className="module-title">물류작업자 업무 부하율 산출</div>
+      <div className="module-title">{lwoText('물류작업자 업무 부하율 산출')}</div>
 
       {/* 기초 정보 */}
       <div className="section-card">
         <div className="section-title">
-          기초 정보 입력
-          <HelpHint title="기초 정보 입력">
-            <p>측정할 작업자의 <b>기본 조건</b>을 설정하는 곳입니다.</p>
+          {lwoText('기초 정보 입력')}
+          <HelpHint title={lwoText('기초 정보 입력')}>
+            <p>{lwoText('측정할 작업자의')} <b>{lwoText('기본 조건')}</b>{lwoText('을 설정하는 곳입니다.')}</p>
             <ul style={{ paddingLeft: 18, margin: '6px 0' }}>
-              <li><b>운반 종류</b>: 도보·대차·파렛트·AGV 등. 종류별 표준 속도가 자동 입력됩니다.</li>
-              <li><b>운반 수량</b>: 1회 이동 시 운반하는 자재 수</li>
-              <li><b>운반 속도</b>: 자동 입력. '기타' 선택 시 직접 입력 가능</li>
-              <li><b>부하 가중치 (0~1)</b>: 1시간 중 실제 작업 비율. 보통 0.8 (= 80% 가동)</li>
+              <li><b>{lwoText('운반 종류')}</b>{lwoText(': 도보·대차·파렛트·AGV 등. 종류별 표준 속도가 자동 입력됩니다.')}</li>
+              <li><b>{lwoText('운반 수량')}</b>{lwoText(': 1회 이동 시 운반하는 자재 수')}</li>
+              <li><b>{lwoText('운반 속도')}</b>{lwoText(': 자동 입력. \'기타\' 선택 시 직접 입력 가능')}</li>
+              <li><b>{lwoText('부하 가중치 (0~1)')}</b>{lwoText(': 1시간 중 실제 작업 비율. 보통 0.8 (= 80% 가동)')}</li>
             </ul>
-            <HintNote>측정 전에 반드시 가중치를 정해두세요. 결과의 부하율 계산 기준입니다.</HintNote>
+            <HintNote>{lwoText('측정 전에 반드시 가중치를 정해두세요. 결과의 부하율 계산 기준입니다.')}</HintNote>
           </HelpHint>
         </div>
         <div className="input-grid">
           <div className="input-group">
             <div className="input-label-row">
-              <span className="input-label">물류 인원</span>
-              <button className="mini-btn" onClick={() => setIsManagerOpen(true)}>명단관리</button>
+              <span className="input-label">{lwoText('물류 인원')}</span>
+              <button className="mini-btn" onClick={() => setIsManagerOpen(true)}>{lwoText('명단관리')}</button>
             </div>
             <select className="input-field" value={activePersonnel || ''}
               onChange={e => switchPersonnel(e.target.value)}>
-              {personnelList?.length === 0 && <option value="">인원을 추가하세요</option>}
+              {personnelList?.length === 0 && <option value="">{lwoText('인원을 추가하세요')}</option>}
               {personnelList?.map(name => <option key={name} value={name}>{name}</option>)}
             </select>
           </div>
 
           <div className="input-group">
-            <div className="input-label-row"><span className="input-label">측정 횟수</span></div>
+            <div className="input-label-row"><span className="input-label">{lwoText('측정 횟수')}</span></div>
             <input className="input-field" type="number" value={measurements.length || 0} readOnly />
           </div>
 
           <div className="input-group">
             <div className="input-label-row">
-              <span className="input-label">운반 종류</span>
-              <button className="mini-btn" onClick={() => setIsTransportManagerOpen(true)}>운반관리</button>
+              <span className="input-label">{lwoText('운반 종류')}</span>
+              <button className="mini-btn" onClick={() => setIsTransportManagerOpen(true)}>{lwoText('운반관리')}</button>
             </div>
             <select className="input-field" value={basicInfo.transportType || 'worker'}
               onChange={e => {
@@ -389,29 +390,29 @@ export default function WorkerWorkload({
           </div>
 
           <div className="input-group">
-            <div className="input-label-row"><span className="input-label">운반 수량</span></div>
+            <div className="input-label-row"><span className="input-label">{lwoText('운반 수량')}</span></div>
             <input className="input-field" type="number" min={1} value={basicInfo.transportQty ?? 1}
               onChange={e => setBasicInfo({ transportQty: e.target.value })} />
           </div>
 
           <div className="input-group">
-            <div className="input-label-row"><span className="input-label">운반 속도 (m/s)</span></div>
+            <div className="input-label-row"><span className="input-label">{lwoText('운반 속도 (m/s)')}</span></div>
             <input className="input-field" type="number" step="0.1" min={0}
               value={basicInfo.speed ?? defaultSpeed}
               onChange={e => setBasicInfo({ speed: e.target.value })} />
           </div>
 
           <div className="input-group">
-            <div className="input-label-row"><span className="input-label">부하 가중치 (0~1)</span></div>
+            <div className="input-label-row"><span className="input-label">{lwoText('부하 가중치 (0~1)')}</span></div>
             <select className="input-field" value={basicInfo.weight ?? 0.8}
               onChange={e => setBasicInfo({ weight: parseFloat(e.target.value) })}>
               {WEIGHT_OPTIONS.map(w => <option key={w} value={w}>{w.toFixed(1)}</option>)}
             </select>
           </div>
 
-          <PhotoSection title="운반 사진" photos={photos.transport}
+          <PhotoSection title={lwoText('운반 사진')} photos={photos.transport}
             onAdd={(f) => addPhoto('transport', f)} onRemove={(i) => removePhoto('transport', i)} />
-          <PhotoSection title="운반 부품 사진" photos={photos.part}
+          <PhotoSection title={lwoText('운반 부품 사진')} photos={photos.part}
             onAdd={(f) => addPhoto('part', f)} onRemove={(i) => removePhoto('part', i)} />
         </div>
       </div>
@@ -419,47 +420,44 @@ export default function WorkerWorkload({
       {/* 측정 결과 (평균 1회 × 시간당 공급횟수) */}
       <div className="section-card">
         <div className="section-title">
-          측정 결과 <span className="sub-title">| 평균 1회 측정 × 시간당 공급횟수</span>
-          <HelpHint title="측정 결과">
-            <p>1시간 내내 측정하기 어렵기 때문에, <b>몇 회 측정한 평균 1회 운반 시간</b>에
-              <b> 시간당 공급횟수</b>를 곱해 1시간 부하율을 환산합니다.</p>
-            <HintFormula>{`평균 1회 운반 시간 = Σ(피킹+이동+로딩/언로딩+회수) ÷ 측정 횟수
-시간당 점유 시간 = 평균 1회 운반 시간 × 시간당 공급횟수
-부하 가중 시간 = 3600초 × 가중치
-물류 부하율(%) = 시간당 점유 시간 ÷ 가중 시간 × 100`}</HintFormula>
-            <p><b>판정 기준</b>:</p>
+          {lwoText('측정 결과')} <span className="sub-title">{lwoText('| 평균 1회 측정 × 시간당 공급횟수')}</span>
+          <HelpHint title={lwoText('측정 결과')}>
+            <p>{lwoText('1시간 내내 측정하기 어렵기 때문에,')} <b>{lwoText('몇 회 측정한 평균 1회 운반 시간')}</b>{lwoText('에')}
+              <b> {lwoText('시간당 공급횟수')}</b>{lwoText('를 곱해 1시간 부하율을 환산합니다.')}</p>
+            <HintFormula>{lwoText('평균 1회 운반 시간 = Σ(피킹+이동+로딩/언로딩+회수) ÷ 측정 횟수\n시간당 점유 시간 = 평균 1회 운반 시간 × 시간당 공급횟수\n부하 가중 시간 = 3600초 × 가중치\n물류 부하율(%) = 시간당 점유 시간 ÷ 가중 시간 × 100')}</HintFormula>
+            <p><b>{lwoText('판정 기준')}</b>:</p>
             <ul style={{ paddingLeft: 18, margin: '4px 0' }}>
-              <li>~70% (녹색): 여유</li>
-              <li>70~90% (앰버): 적정</li>
-              <li>90% 초과 (짙은 앰버): 과부하 → 인원 추가 / 동선 단축 검토</li>
+              <li>{lwoText('~70% (녹색): 여유')}</li>
+              <li>{lwoText('70~90% (앰버): 적정')}</li>
+              <li>{lwoText('90% 초과 (짙은 앰버): 과부하 → 인원 추가 / 동선 단축 검토')}</li>
             </ul>
-            <HintNote type="ok">원단위 기준 시간당 공급횟수를 입력해야 부하율이 계산됩니다.</HintNote>
+            <HintNote type="ok">{lwoText('원단위 기준 시간당 공급횟수를 입력해야 부하율이 계산됩니다.')}</HintNote>
           </HelpHint>
         </div>
         <div className="input-grid">
           <div className="input-group full-width">
-            <div className="input-label-row"><span className="input-label">시간당 공급횟수 (회/h)</span></div>
+            <div className="input-label-row"><span className="input-label">{lwoText('시간당 공급횟수 (회/h)')}</span></div>
             <input className="input-field" type="number" step="0.1" min={0} value={basicInfo.supplyPerHour ?? 1}
-              onChange={e => setBasicInfo({ supplyPerHour: e.target.value })} placeholder="원단위 기준 1시간당 공급 횟수 (기본 1)" />
+              onChange={e => setBasicInfo({ supplyPerHour: e.target.value })} placeholder={lwoText('원단위 기준 1시간당 공급 횟수 (기본 1)')} />
           </div>
           <div className="result-box tone-final">
-            <span className="result-box__label">평균 1회 운반 시간 (피킹+이동+로딩/언로딩+회수)</span>
-            <span className="result-box__value">{avgCycleSec.toFixed(1)}초</span>
+            <span className="result-box__label">{lwoText('평균 1회 운반 시간 (피킹+이동+로딩/언로딩+회수)')}</span>
+            <span className="result-box__value">{avgCycleSec.toFixed(1)}{lwoText('초')}</span>
           </div>
           <div className="result-box tone-blue">
-            <span className="result-box__label">시간당 점유 시간 = 평균 1회 × 공급횟수</span>
-            <span className="result-box__value">{hourlyBusySec.toFixed(1)}초</span>
+            <span className="result-box__label">{lwoText('시간당 점유 시간 = 평균 1회 × 공급횟수')}</span>
+            <span className="result-box__value">{hourlyBusySec.toFixed(1)}{lwoText('초')}</span>
           </div>
           <div className="result-box tone-blue">
-            <span className="result-box__label">총 이동거리 (이동+회수)</span>
+            <span className="result-box__label">{lwoText('총 이동거리 (이동+회수)')}</span>
             <span className="result-box__value">{totalDistance.toFixed(1)} m</span>
           </div>
           <div className="result-box tone-slate">
-            <span className="result-box__label">부하 가중 시간 = 3600 × {weight}</span>
-            <span className="result-box__value">{weightedTime.toFixed(0)} 초</span>
+            <span className="result-box__label">{lwoText('부하 가중 시간 = 3600 ×')} {weight}</span>
+            <span className="result-box__value">{weightedTime.toFixed(0)} {lwoText('초')}</span>
           </div>
           <div className="result-box tone-final">
-            <span className="result-box__label">물류 부하율</span>
+            <span className="result-box__label">{lwoText('물류 부하율')}</span>
             <span className="result-box__value">{workloadRate.toFixed(1)}%</span>
           </div>
         </div>
@@ -469,24 +467,24 @@ export default function WorkerWorkload({
       <div className="section-card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
           <div className="section-title" style={{ marginBottom: 0, border: 'none', paddingBottom: 0 }}>
-            측정 내역 <span className="sub-title">| {measurements.length}회 중 {activeIndex || 0}회차</span>
-            <HelpHint title="측정 내역">
-              <p>한 사이클을 <b>4단계</b>로 나눠 측정하는 스톱워치 영역입니다.</p>
+            {lwoText('측정 내역')} <span className="sub-title">| {measurements.length}{lwoText('회 중')} {activeIndex || 0}{lwoText('회차')}</span>
+            <HelpHint title={lwoText('측정 내역')}>
+              <p>{lwoText('한 사이클을')} <b>{lwoText('4단계')}</b>{lwoText('로 나눠 측정하는 스톱워치 영역입니다.')}</p>
               <ul style={{ paddingLeft: 18, margin: '6px 0' }}>
-                <li><b>① 피킹</b>: 자재를 집어 운반구에 싣는 시간 + 자재 종수</li>
-                <li><b>② 이동</b>: 목적지까지의 이동 시간 (공정 번호 선택)</li>
-                <li><b>③ 로딩/언로딩</b>: 도착 후 짐을 내리거나 다시 싣는 시간</li>
-                <li><b>④ 회수</b>: 빈 운반구로 출발지점 복귀</li>
+                <li><b>{lwoText('① 피킹')}</b>{lwoText(': 자재를 집어 운반구에 싣는 시간 + 자재 종수')}</li>
+                <li><b>{lwoText('② 이동')}</b>{lwoText(': 목적지까지의 이동 시간 (공정 번호 선택)')}</li>
+                <li><b>{lwoText('③ 로딩/언로딩')}</b>{lwoText(': 도착 후 짐을 내리거나 다시 싣는 시간')}</li>
+                <li><b>{lwoText('④ 회수')}</b>{lwoText(': 빈 운반구로 출발지점 복귀')}</li>
               </ul>
-              <p>각 카드에서 <b>▶ 시작</b> → 작업 → <b>⏹ 종료</b> 순서로 누르면 Gap 시간이 자동 기록됩니다.</p>
-              <HintNote>같은 사이클을 3~5회 반복 측정하려면 상단 <b>+</b> 탭을 눌러 회차를 추가하세요.</HintNote>
-              <HintNote type="warn">회차 삭제 시 해당 회차의 모든 카드 데이터가 함께 삭제됩니다.</HintNote>
+              <p>{lwoText('각 카드에서')} <b>{lwoText('▶ 시작')}</b> {lwoText('→ 작업 →')} <b>{lwoText('⏹ 종료')}</b> {lwoText('순서로 누르면 Gap 시간이 자동 기록됩니다.')}</p>
+              <HintNote>{lwoText('같은 사이클을 3~5회 반복 측정하려면 상단')} <b>+</b> {lwoText('탭을 눌러 회차를 추가하세요.')}</HintNote>
+              <HintNote type="warn">{lwoText('회차 삭제 시 해당 회차의 모든 카드 데이터가 함께 삭제됩니다.')}</HintNote>
             </HelpHint>
           </div>
           {measurements.length > 1 && (
             <button className="btn" onClick={() => handleDeleteCycle(activeCycleId)}
               style={{ height: 32, padding: '0 12px', background: '#FEF3C7', color: '#B45309', fontSize: '0.78rem' }}>
-              🗑️ 회차삭제
+              {lwoText('🗑️ 회차삭제')}
             </button>
           )}
         </div>
@@ -497,40 +495,40 @@ export default function WorkerWorkload({
               key={m.id}
               onClick={() => setUserSelectedCycleId(m.id)}
               className={`cycle-tab-btn ${activeCycleId === m.id ? 'active' : ''}`}
-              title={`${idx + 1}회차`}
+              title={lwoText('{number}회차', { number: idx + 1 })}
             >{idx + 1}</button>
           ))}
           <button onClick={handleAddCycle} className="cycle-tab-btn"
             style={{ background: '#FDF2F4', color: '#A50034', borderColor: '#E8C5CC' }}
-            title="회차 추가">+</button>
+            title={lwoText('회차 추가')}>+</button>
         </div>
 
         {activeCycle?.cards?.map((card, idx) => (
           <TimerSection
             key={card.id}
-            title={`${CARD_TITLES[card.type] || card.type} (${idx + 1})`}
+            title={`${CARD_TITLES[card.type] ? lwoText(CARD_TITLES[card.type]) : card.type} (${idx + 1})`}
             start={card.start}
             end={card.end}
             onStart={() => updateCycleCard(activeCycleId, card.id, { start: Date.now(), end: null })}
             onEnd={() => updateCycleCard(activeCycleId, card.id, { end: Date.now() })}
             onDelete={() => {
-              if (window.confirm('이 카드를 삭제하시겠습니까?')) {
+              if (window.confirm(lwoText('이 카드를 삭제하시겠습니까?'))) {
                 removeCardInCycle(activeCycleId, card.id)
               }
             }}
             extraInputs={
               card.type === 'pick' ? (
                 <div className="input-group">
-                  <span className="input-label">자재 종수</span>
+                  <span className="input-label">{lwoText('자재 종수')}</span>
                   <input className="input-field" type="number" min={0} value={card.materialCount ?? ''}
                     onChange={e => updateCycleCard(activeCycleId, card.id, { materialCount: e.target.value })} />
                 </div>
               ) : (card.type === 'move' || card.type === 'load') ? (
                 <div className="input-group">
-                  <span className="input-label">공정 번호 (1~10)</span>
+                  <span className="input-label">{lwoText('공정 번호 (1~10)')}</span>
                   <select className="input-field" value={card.processNo ?? card.waypointNo ?? 1}
                     onChange={e => updateCycleCard(activeCycleId, card.id, { processNo: parseInt(e.target.value), waypointNo: parseInt(e.target.value) })}>
-                    {Array.from({ length: 10 }, (_, i) => <option key={i + 1} value={i + 1}>{i + 1}공정</option>)}
+                    {Array.from({ length: 10 }, (_, i) => <option key={i + 1} value={i + 1}>{i + 1}{lwoText('공정')}</option>)}
                   </select>
                 </div>
               ) : null
@@ -552,7 +550,7 @@ export default function WorkerWorkload({
               padding: '4px 4px', height: 'auto', minHeight: 44, textAlign: 'center'
             }}
               onClick={() => activeCycleId && addCardInCycle(activeCycleId, b.type)}>
-              {b.label}
+              {lwoText(b.label)}
             </button>
           ))}
         </div>
@@ -561,28 +559,28 @@ export default function WorkerWorkload({
       {/* 상세 그래프 */}
       <div className="section-card">
         <div className="section-title">
-          상세 시간 그래프
-          <HelpHint title="상세 시간 그래프">
-            <p>피킹, 이동, 로딩/언로딩, 회수 시간을 회차별 또는 작업자별로 비교합니다.</p>
-            <HintNote>그래프 종류는 라인형과 박스형 중 선택할 수 있습니다.</HintNote>
+          {lwoText('상세 시간 그래프')}
+          <HelpHint title={lwoText('상세 시간 그래프')}>
+            <p>{lwoText('피킹, 이동, 로딩/언로딩, 회수 시간을 회차별 또는 작업자별로 비교합니다.')}</p>
+            <HintNote>{lwoText('그래프 종류는 라인형과 박스형 중 선택할 수 있습니다.')}</HintNote>
           </HelpHint>
         </div>
 
         <div className="chart-control-row">
           <label>
-            <span>그래프 기준</span>
+            <span>{lwoText('그래프 기준')}</span>
             <select className="input-field" value={detailChartBasis}
               onChange={e => setDetailChartBasis(e.target.value)}>
-              <option value="cycle">회차별</option>
-              <option value="personnel">작업자별</option>
+              <option value="cycle">{lwoText('회차별')}</option>
+              <option value="personnel">{lwoText('작업자별')}</option>
             </select>
           </label>
           <label>
-            <span>그래프 종류</span>
+            <span>{lwoText('그래프 종류')}</span>
             <select className="input-field" value={detailChartType}
               onChange={e => setDetailChartType(e.target.value)}>
-              <option value="line">라인 그래프</option>
-              <option value="box">박스형 그래프</option>
+              <option value="line">{lwoText('라인 그래프')}</option>
+              <option value="box">{lwoText('박스형 그래프')}</option>
             </select>
           </label>
         </div>
@@ -593,7 +591,7 @@ export default function WorkerWorkload({
             return (
               <div className="detail-chart-card" key={chart.type}>
                 <div className="detail-chart-card__title">
-                  {detailChartBasis === 'personnel' ? chart.label : `${activePersonnel}: ${chart.label}`}
+                  {detailChartBasis === 'personnel' ? lwoText(chart.label) : `${activePersonnel}: ${lwoText(chart.label)}`}
                 </div>
                 {detailChartType === 'line'
                   ? <MiniLineChart labels={chart.labels} values={values} color={chart.color} />
@@ -611,29 +609,29 @@ export default function WorkerWorkload({
             fontSize: '1.1rem', fontWeight: 800, color: 'var(--color-primary-dark)',
             textAlign: 'center', padding: '8px 16px 12px'
           }}>
-            📊 전체 인원 분석 대시보드
+            {lwoText('📊 전체 인원 분석 대시보드')}
           </div>
 
           <div className="chart-mode-toggle">
             <button
               className={`chart-mode-btn ${chartMode === 'total' ? 'active' : ''}`}
-              onClick={() => setChartMode('total')}>누적</button>
+              onClick={() => setChartMode('total')}>{lwoText('누적')}</button>
             <button
               className={`chart-mode-btn ${chartMode === 'avg' ? 'active' : ''}`}
-              onClick={() => setChartMode('avg')}>평균</button>
+              onClick={() => setChartMode('avg')}>{lwoText('평균')}</button>
           </div>
 
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
             {Object.entries({ '피킹': COLORS.pick, '이동': COLORS.move, '로딩/언로딩': COLORS.load, '회수': COLORS.recovery }).map(([label, color]) => (
               <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                 <div style={{ width: 12, height: 12, background: color, borderRadius: 2 }} />
-                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{label}</span>
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{lwoText(label)}</span>
               </div>
             ))}
           </div>
 
           <div className="section-card" style={{ background: 'white' }}>
-            <div className="section-title">인원별 작업 시간 {chartMode === 'avg' ? '평균' : '누적'} (초)</div>
+            <div className="section-title">{lwoText('인원별 작업 시간')} {lwoText(chartMode === 'avg' ? '평균' : '누적')} {lwoText('(초)')}</div>
             <div style={{ display: 'flex', height: 220, gap: 8, alignItems: 'flex-end', margin: '32px 0 24px 0', borderBottom: '1px dashed #CBD5E1' }}>
               {dashboardStats.map((w, i) => {
                 const heightPct = maxT > 0 ? Math.max(2, (w.totalT / maxT) * 100) : 2
@@ -646,7 +644,7 @@ export default function WorkerWorkload({
                       {renderSegment(w.details.loadT, w.totalT, COLORS.load, '로딩')}
                       {renderSegment(w.details.recoverT, w.totalT, COLORS.recovery, '회수')}
                     </div>
-                    <div style={{ position: 'absolute', bottom: -22, fontSize: '0.7rem', color: w.isAverage ? 'var(--color-primary)' : 'var(--color-text-muted)', fontWeight: 800, textAlign: 'center', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.name}</div>
+                    <div style={{ position: 'absolute', bottom: -22, fontSize: '0.7rem', color: w.isAverage ? 'var(--color-primary)' : 'var(--color-text-muted)', fontWeight: 800, textAlign: 'center', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.isAverage ? lwoText('평균') : w.name}</div>
                   </div>
                 )
               })}
@@ -654,7 +652,7 @@ export default function WorkerWorkload({
           </div>
 
           <div className="section-card" style={{ background: 'white' }}>
-            <div className="section-title">인원별 총 이동 거리 {chartMode === 'avg' ? '평균' : '누적'} (m)</div>
+            <div className="section-title">{lwoText('인원별 총 이동 거리')} {lwoText(chartMode === 'avg' ? '평균' : '누적')} (m)</div>
             <div style={{ display: 'flex', height: 220, gap: 8, alignItems: 'flex-end', margin: '32px 0 24px 0', borderBottom: '1px dashed #D4C8CD' }}>
               {dashboardStats.map((w, i) => {
                 const heightPct = maxDist > 0 ? Math.max(2, (w.dist / maxDist) * 100) : 2
@@ -665,7 +663,7 @@ export default function WorkerWorkload({
                       {renderSegment(w.details.moveDist, w.dist, COLORS.move, '이동', 'm')}
                       {renderSegment(w.details.recoverDist, w.dist, COLORS.recovery, '회수', 'm')}
                     </div>
-                    <div style={{ position: 'absolute', bottom: -22, fontSize: '0.7rem', color: w.isAverage ? 'var(--color-primary-dark)' : '#7C6E74', fontWeight: 800, textAlign: 'center', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.name}</div>
+                    <div style={{ position: 'absolute', bottom: -22, fontSize: '0.7rem', color: w.isAverage ? 'var(--color-primary-dark)' : '#7C6E74', fontWeight: 800, textAlign: 'center', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.isAverage ? lwoText('평균') : w.name}</div>
                   </div>
                 )
               })}
@@ -673,7 +671,7 @@ export default function WorkerWorkload({
           </div>
 
           <div className="section-card" style={{ background: 'white' }}>
-            <div className="section-title">인원별 업무 부하율 (%)</div>
+            <div className="section-title">{lwoText('인원별 업무 부하율 (%)')}</div>
             <div style={{ display: 'flex', height: 220, gap: 8, alignItems: 'flex-end', margin: '32px 0 24px 0', borderBottom: '1px dashed #D4C8CD' }}>
               {dashboardStats.map((w, i) => {
                 const heightPct = maxWl > 0 ? Math.max(2, (w.wlRate / maxWl) * 100) : 2
@@ -687,7 +685,7 @@ export default function WorkerWorkload({
                       {renderSegment(w.details.loadRate, w.wlRate, COLORS.load, '로딩', '%')}
                       {renderSegment(w.details.recoverRate, w.wlRate, COLORS.recovery, '회수', '%')}
                     </div>
-                    <div style={{ position: 'absolute', bottom: -22, fontSize: '0.7rem', color: w.isAverage ? 'var(--color-primary-dark)' : '#7C6E74', fontWeight: 800, textAlign: 'center', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.name}</div>
+                    <div style={{ position: 'absolute', bottom: -22, fontSize: '0.7rem', color: w.isAverage ? 'var(--color-primary-dark)' : '#7C6E74', fontWeight: 800, textAlign: 'center', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.isAverage ? lwoText('평균') : w.name}</div>
                   </div>
                 )
               })}
@@ -696,7 +694,7 @@ export default function WorkerWorkload({
 
           {teamTotal.totalT > 0 && (
             <div className="section-card" style={{ background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 100%)', borderColor: '#334155', color: 'white' }}>
-              <div className="section-title" style={{ color: 'white', borderBottomColor: 'rgba(255,255,255,0.15)' }}>창고 전체 작업 시간 분포 (팀 총합)</div>
+              <div className="section-title" style={{ color: 'white', borderBottomColor: 'rgba(255,255,255,0.15)' }}>{lwoText('창고 전체 작업 시간 분포 (팀 총합)')}</div>
               <div style={{ height: 44, width: '100%', display: 'flex', borderRadius: 8, overflow: 'hidden', margin: '12px 0 8px', border: '1px solid #334155' }}>
                 {renderHorizontalSegment(teamTotal.pickT, teamTotal.totalT, COLORS.pick, '피킹', 's')}
                 {renderHorizontalSegment(teamTotal.moveT, teamTotal.totalT, COLORS.move, '이동', 's')}
@@ -704,8 +702,8 @@ export default function WorkerWorkload({
                 {renderHorizontalSegment(teamTotal.recoverT, teamTotal.totalT, COLORS.recovery, '회수', 's')}
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', opacity: 0.85 }}>
-                <span>총 작업 시간: {teamTotal.totalT.toFixed(1)}초</span>
-                <span>총 이동 거리: {teamTotal.dist.toFixed(1)}m</span>
+                <span>{lwoText('총 작업 시간:')} {teamTotal.totalT.toFixed(1)}{lwoText('초')}</span>
+                <span>{lwoText('총 이동 거리:')} {teamTotal.dist.toFixed(1)}m</span>
               </div>
             </div>
           )}
@@ -717,22 +715,22 @@ export default function WorkerWorkload({
         <div className="modal-overlay">
           <div className="section-card" style={{ width: '100%', maxWidth: 420, margin: 0, maxHeight: '85vh', overflowY: 'auto', background: 'white' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: '1px solid #e2e8f0', paddingBottom: 10 }}>
-              <span className="section-title" style={{ marginBottom: 0, border: 'none', padding: 0 }}>👥 물류 인원 명단 관리</span>
+              <span className="section-title" style={{ marginBottom: 0, border: 'none', padding: 0 }}>{lwoText('👥 물류 인원 명단 관리')}</span>
               <button onClick={() => { setIsManagerOpen(false); setEditingName(null) }}
                 style={{ border: 'none', background: 'none', fontSize: '1.5rem', color: '#9C8E94', cursor: 'pointer' }}>✕</button>
             </div>
             <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-              <input className="input-field" placeholder="새 이름" value={newPersonName}
+              <input className="input-field" placeholder={lwoText('새 이름')} value={newPersonName}
                 onChange={e => setNewPersonName(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && newPersonName.trim()) { addPersonnel(newPersonName.trim()); setNewPersonName('') } }} />
               <button className="btn btn-primary"
                 onClick={() => { if (newPersonName.trim()) { addPersonnel(newPersonName.trim()); setNewPersonName('') } }}>
-                추가
+                {lwoText('추가')}
               </button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {personnelList?.length === 0 && (
-                <div style={{ textAlign: 'center', color: '#9C8E94', padding: 16 }}>등록된 인원이 없습니다.</div>
+                <div style={{ textAlign: 'center', color: '#9C8E94', padding: 16 }}>{lwoText('등록된 인원이 없습니다.')}</div>
               )}
               {personnelList?.map(name => (
                 <div key={name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 10, background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' }}>
@@ -752,7 +750,7 @@ export default function WorkerWorkload({
                       <div style={{ display: 'flex', gap: 12 }}>
                         <button onClick={() => { setEditingName(name); setEditValue(name) }}
                           style={{ border: 'none', background: 'none', color: '#A50034', fontSize: '1.1rem', cursor: 'pointer' }}>✏️</button>
-                        <button onClick={() => { if (window.confirm(`${name}님을 삭제하시겠습니까? 측정 데이터도 함께 삭제됩니다.`)) removePersonnel(name) }}
+                        <button onClick={() => { if (window.confirm(lwoText('{name}님을 삭제하시겠습니까? 측정 데이터도 함께 삭제됩니다.', { name }))) removePersonnel(name) }}
                           style={{ border: 'none', background: 'none', color: '#ef4444', fontSize: '1.1rem', cursor: 'pointer' }}>🗑️</button>
                       </div>
                     </>
@@ -761,7 +759,7 @@ export default function WorkerWorkload({
               ))}
             </div>
             <button className="btn" style={{ width: '100%', marginTop: 20, background: '#F4EFF1', color: '#4A4045' }}
-              onClick={() => { setIsManagerOpen(false); setEditingName(null) }}>닫기</button>
+              onClick={() => { setIsManagerOpen(false); setEditingName(null) }}>{lwoText('닫기')}</button>
           </div>
         </div>
       )}
@@ -771,15 +769,15 @@ export default function WorkerWorkload({
         <div className="modal-overlay">
           <div className="section-card" style={{ width: '100%', maxWidth: 420, margin: 0, maxHeight: '85vh', overflowY: 'auto', background: 'white' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: '1px solid #e2e8f0', paddingBottom: 10 }}>
-              <span className="section-title" style={{ marginBottom: 0, border: 'none', padding: 0 }}>🚚 운반 종류 관리</span>
+              <span className="section-title" style={{ marginBottom: 0, border: 'none', padding: 0 }}>{lwoText('🚚 운반 종류 관리')}</span>
               <button onClick={() => { setIsTransportManagerOpen(false); setEditingTransportId(null) }}
                 style={{ border: 'none', background: 'none', fontSize: '1.5rem', color: '#9C8E94', cursor: 'pointer' }}>✕</button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
-              <input className="input-field" placeholder="종류 이름 (예: 지게차)" value={newTransportLabel}
+              <input className="input-field" placeholder={lwoText('종류 이름 (예: 지게차)')} value={newTransportLabel}
                 onChange={e => setNewTransportLabel(e.target.value)} />
               <div style={{ display: 'flex', gap: 8 }}>
-                <input className="input-field" type="number" step="0.1" placeholder="속도 (m/s)" value={newTransportSpeed}
+                <input className="input-field" type="number" step="0.1" placeholder={lwoText('속도 (m/s)')} value={newTransportSpeed}
                   onChange={e => setNewTransportSpeed(e.target.value)} />
                 <button className="btn btn-primary"
                   onClick={() => {
@@ -787,7 +785,7 @@ export default function WorkerWorkload({
                       addTransportType(`tt_${Date.now()}`, newTransportLabel.trim(), newTransportSpeed)
                       setNewTransportLabel(''); setNewTransportSpeed('')
                     }
-                  }}>추가</button>
+                  }}>{lwoText('추가')}</button>
               </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -815,7 +813,7 @@ export default function WorkerWorkload({
                       <div style={{ display: 'flex', gap: 12 }}>
                         <button onClick={() => { setEditingTransportId(id); setEditTransportLabel(t.label); setEditTransportSpeed(t.speed) }}
                           style={{ border: 'none', background: 'none', color: '#A50034', fontSize: '1.1rem', cursor: 'pointer' }}>✏️</button>
-                        <button onClick={() => { if (window.confirm(`${t.label}을(를) 삭제하시겠습니까?`)) removeTransportType(id) }}
+                        <button onClick={() => { if (window.confirm(lwoText('{name}을(를) 삭제하시겠습니까?', { name: t.label }))) removeTransportType(id) }}
                           style={{ border: 'none', background: 'none', color: '#ef4444', fontSize: '1.1rem', cursor: 'pointer' }}>🗑️</button>
                       </div>
                     </>
@@ -824,7 +822,7 @@ export default function WorkerWorkload({
               ))}
             </div>
             <button className="btn" style={{ width: '100%', marginTop: 20, background: '#F4EFF1', color: '#4A4045' }}
-              onClick={() => { setIsTransportManagerOpen(false); setEditingTransportId(null) }}>닫기</button>
+              onClick={() => { setIsTransportManagerOpen(false); setEditingTransportId(null) }}>{lwoText('닫기')}</button>
           </div>
         </div>
       )}

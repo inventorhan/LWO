@@ -13,6 +13,7 @@ import { exportToExcel } from './shared/utils/excelExport'
 import { saveJson } from './shared/utils/saveAndShare'
 import SplashScreen from './shared/components/SplashScreen'
 import HelpModal from './shared/components/HelpModal'
+import { LANGUAGE_KEY, getLanguage, setLanguage, syncLanguage, lwoText } from './i18n'
 
 const TABS = [
   { id: 'worker',    label: '작업자 부하율', short: '작업자', icon: '👷' },
@@ -50,8 +51,23 @@ export default function App() {
   const [toast, setToast] = useState('')
   const [helpOpen, setHelpOpen] = useState(false)
   const [unitPromptDismissed, setUnitPromptDismissed] = useState(false)
+  const [language, setLanguageState] = useState(getLanguage)
   const toastTimer = useRef(null)
   const bottomNavRef = useRef(null)
+
+  useEffect(() => {
+    const handleStorage = (event) => {
+      if (event.key === LANGUAGE_KEY || event.key === null) {
+        setLanguageState(syncLanguage(event.newValue))
+      }
+    }
+    window.addEventListener('storage', handleStorage)
+    return () => window.removeEventListener('storage', handleStorage)
+  }, [])
+
+  useEffect(() => {
+    document.documentElement.lang = { Korean: 'ko', English: 'en', Chinese: 'zh-CN' }[language]
+  }, [language])
 
   useEffect(() => {
     if (!bottomNavRef.current) return
@@ -67,6 +83,16 @@ export default function App() {
     toastTimer.current = setTimeout(() => setToast(''), 2400)
   }
 
+  const handleLanguageChange = (event) => {
+    try {
+      setLanguage(event.target.value)
+      setLanguageState(event.target.value)
+    } catch (error) {
+      console.error('Could not save the language preference:', error)
+      showToast(lwoText('언어 설정을 저장하지 못했습니다.'))
+    }
+  }
+
   const pendingUnitSections = ['area', 'elevator'].filter(section => state[section]?._unit === 'unknown')
   const unitSection = pendingUnitSections[0]
 
@@ -75,10 +101,10 @@ export default function App() {
       const filename = `LWO_분석_${new Date().toISOString().slice(0, 10)}.json`
       const json = JSON.stringify(state, null, 2)
       await saveJson(filename, json)
-      showToast(`💾 저장 완료 (Documents/LWO/${filename})`)
+      showToast(lwoText('💾 저장 완료 (Documents/LWO/{filename})', { filename }))
     } catch (err) {
       console.error(err)
-      showToast('⚠️ 저장 중 오류가 발생했습니다.')
+      showToast(lwoText('⚠️ 저장 중 오류가 발생했습니다.'))
     }
   }
 
@@ -89,14 +115,14 @@ export default function App() {
     reader.onload = (ev) => {
       try {
         const loaded = JSON.parse(ev.target.result)
-        if (storageBlocked && rawStoredData && !window.confirm('읽을 수 없는 기존 저장본을 새 파일로 교체합니다. 원본 백업을 먼저 내려받았습니까?')) return
+        if (storageBlocked && rawStoredData && !window.confirm(lwoText('읽을 수 없는 기존 저장본을 새 파일로 교체합니다. 원본 백업을 먼저 내려받았습니까?'))) return
         setState(migrateAppState(loaded))
         setNumericBackup(null)
         setStorageBlocked(false)
         setUnitPromptDismissed(false)
-        showToast('📂 데이터를 불러왔습니다.')
+        showToast(lwoText('📂 데이터를 불러왔습니다.'))
       } catch {
-        showToast('⚠️ 파일 형식이 잘못되었습니다.')
+        showToast(lwoText('⚠️ 파일 형식이 잘못되었습니다.'))
       }
     }
     reader.readAsText(file)
@@ -106,46 +132,46 @@ export default function App() {
   const handleExportExcel = async () => {
     if (pendingUnitSections.length) {
       setUnitPromptDismissed(false)
-      showToast('⚠️ 면적/E/V 길이 단위를 먼저 확인해 주세요.')
+      showToast(lwoText('⚠️ 면적/E/V 길이 단위를 먼저 확인해 주세요.'))
       return
     }
     try {
       await exportToExcel(state)
-      showToast('📊 엑셀 저장 완료 (Documents/LWO/)')
+      showToast(lwoText('📊 엑셀 저장 완료 (Documents/LWO/)'))
     } catch (err) {
       console.error(err)
-      showToast('⚠️ 엑셀 저장 중 오류가 발생했습니다.')
+      showToast(lwoText('⚠️ 엑셀 저장 중 오류가 발생했습니다.'))
     }
   }
 
   const handleReset = () => {
-    if (window.confirm('모든 입력 데이터를 초기화합니다. 진행하시겠습니까?')) {
+    if (window.confirm(lwoText('모든 입력 데이터를 초기화합니다. 진행하시겠습니까?'))) {
       try {
         localStorage.removeItem('lwo_app_persistent_data')
         localStorage.removeItem('lwo_app_persistent_data_measurements_backup')
       } catch (err) {
         console.error('저장 데이터 초기화 실패:', err)
-        showToast('⚠️ 저장 데이터 초기화에 실패했습니다.')
+        showToast(lwoText('⚠️ 저장 데이터 초기화에 실패했습니다.'))
         return
       }
       setState(initialState)
       setNumericBackup(null)
       setStorageBlocked(false)
-      showToast('🔄 초기화되었습니다.')
+      showToast(lwoText('🔄 초기화되었습니다.'))
     }
   }
 
   const handleSaveOriginal = async () => {
     if (!rawStoredData) {
-      showToast('⚠️ 내려받을 기존 저장본을 읽을 수 없습니다.')
+      showToast(lwoText('⚠️ 내려받을 기존 저장본을 읽을 수 없습니다.'))
       return
     }
     try {
       await saveJson('LWO_기존_저장원본.txt', rawStoredData)
-      showToast('💾 기존 저장 원본을 내려받았습니다.')
+      showToast(lwoText('💾 기존 저장 원본을 내려받았습니다.'))
     } catch (err) {
       console.error(err)
-      showToast('⚠️ 원본 백업 저장에 실패했습니다.')
+      showToast(lwoText('⚠️ 원본 백업 저장에 실패했습니다.'))
     }
   }
 
@@ -154,22 +180,22 @@ export default function App() {
       if (!numericBackup) throw new Error('수치 임시 백업이 없습니다.')
       if (!restore) {
         await saveJson('LWO_수치_임시백업.json', numericBackup)
-        showToast('💾 수치 임시 백업을 내려받았습니다.')
+        showToast(lwoText('💾 수치 임시 백업을 내려받았습니다.'))
         return
       }
-      if (!window.confirm('수치 임시 백업에는 사진이 없습니다. 기존 저장본을 백업하고 이 수치로 복구하시겠습니까?')) return
+      if (!window.confirm(lwoText('수치 임시 백업에는 사진이 없습니다. 기존 저장본을 백업하고 이 수치로 복구하시겠습니까?'))) return
       setState(migrateAppState(JSON.parse(numericBackup)))
       setNumericBackup(null)
       setStorageBlocked(false)
       setUnitPromptDismissed(false)
     } catch (err) {
       console.error('수치 임시 백업 처리 실패:', err)
-      showToast('⚠️ 수치 임시 백업을 처리하지 못했습니다.')
+      showToast(lwoText('⚠️ 수치 임시 백업을 처리하지 못했습니다.'))
     }
   }
 
   const handleKeepOriginal = () => {
-    if (!window.confirm('수치 임시 백업을 사용하지 않고 기존 저장본을 유지합니다. 필요한 경우 먼저 수치 백업을 내려받으세요.')) return
+    if (!window.confirm(lwoText('수치 임시 백업을 사용하지 않고 기존 저장본을 유지합니다. 필요한 경우 먼저 수치 백업을 내려받으세요.'))) return
     setNumericBackup(null)
     setStorageBlocked(false)
   }
@@ -180,15 +206,15 @@ export default function App() {
       await addPhoto(module, category, file)
     } catch (err) {
       console.error(err)
-      showToast('⚠️ 사진을 처리할 수 없습니다. 다시 시도해 주세요.')
+      showToast(lwoText('⚠️ 사진을 처리할 수 없습니다. 다시 시도해 주세요.'))
     }
   }
 
   const renderModule = () => {
     if (['area', 'elevator'].includes(activeTab) && state[activeTab]?._unit === 'unknown') {
       return <div className="section-card">
-        <p>기존 길이 단위를 확인하기 전에는 이 항목의 계산을 표시하지 않습니다.</p>
-        <button className="header-btn" onClick={() => setUnitPromptDismissed(false)}>단위 확인</button>
+        <p>{lwoText('기존 길이 단위를 확인하기 전에는 이 항목의 계산을 표시하지 않습니다.')}</p>
+        <button className="header-btn" onClick={() => setUnitPromptDismissed(false)}>{lwoText('단위 확인')}</button>
       </div>
     }
     switch (activeTab) {
@@ -236,9 +262,9 @@ export default function App() {
           <div className="section-card compact-mode-card">
             <div className="segmented-control">
               <button className={`segmented-btn ${inventoryMode === 'uph' ? 'active' : ''}`}
-                onClick={() => setInventoryMode('uph')}>UPH 기준 재고</button>
+                onClick={() => setInventoryMode('uph')}>{lwoText('UPH 기준 재고')}</button>
               <button className={`segmented-btn ${inventoryMode === 'stats' ? 'active' : ''}`}
-                onClick={() => setInventoryMode('stats')}>실적 기준 재고</button>
+                onClick={() => setInventoryMode('stats')}>{lwoText('실적 기준 재고')}</button>
             </div>
           </div>
           {inventoryMode === 'uph'
@@ -297,7 +323,7 @@ export default function App() {
               onClick={() => setActiveTab(tab.id)}
             >
               <span className="nav-icon">{tab.icon}</span>
-              <span className="nav-text">{tab.label}</span>
+              <span className="nav-text">{lwoText(tab.label)}</span>
             </button>
           ))}
         </nav>
@@ -316,20 +342,25 @@ export default function App() {
           <span className="header-subtitle hide-sm">Logistics Work Optimizer</span>
         </div>
         <div className="header-right">
-          <label className="header-btn" title="JSON 데이터 불러오기">
-            <span>📂</span><span className="hide-sm">열기</span>
+          <select className="language-select" value={language} onChange={handleLanguageChange} aria-label={lwoText('언어 선택')}>
+            <option value="Korean">한국어</option>
+            <option value="English">English</option>
+            <option value="Chinese">中文</option>
+          </select>
+          <label className="header-btn" title={lwoText('JSON 데이터 불러오기')}>
+            <span>📂</span><span className="hide-sm">{lwoText('열기')}</span>
             <input type="file" accept=".json,application/json" onChange={handleLoad} style={{ display: 'none' }} />
           </label>
-          <button className="header-btn" onClick={handleSave} title="JSON 저장">
-            <span>💾</span><span className="hide-sm">저장</span>
+          <button className="header-btn" onClick={handleSave} title={lwoText('JSON 저장')}>
+            <span>💾</span><span className="hide-sm">{lwoText('저장')}</span>
           </button>
-          <button className="header-btn btn-excel" onClick={handleExportExcel} title="Excel 내보내기">
-            <span>📊</span><span className="hide-sm">엑셀</span>
+          <button className="header-btn btn-excel" onClick={handleExportExcel} title={lwoText('Excel 내보내기')}>
+            <span>📊</span><span className="hide-sm">{lwoText('엑셀')}</span>
           </button>
-          <button className="header-btn" onClick={() => setHelpOpen(true)} title="사용 설명서 열기">
-            <span>📖</span><span className="hide-sm">설명서</span>
+          <button className="header-btn" onClick={() => setHelpOpen(true)} title={lwoText('사용 설명서 열기')}>
+            <span>📖</span><span className="hide-sm">{lwoText('설명서')}</span>
           </button>
-          <button className="header-btn btn-reset" onClick={handleReset} title="모든 입력 초기화">
+          <button className="header-btn btn-reset" onClick={handleReset} title={lwoText('모든 입력 초기화')}>
             <span>🔄</span>
           </button>
         </div>
@@ -339,21 +370,21 @@ export default function App() {
 
       <main className="app-content">
         {storageWarning && <div role="alert" className="storage-warning">
-          <span>{storageWarning}</span>
+          <span>{lwoText(storageWarning)}</span>
           {storageBlocked
             ? <>
-                {rawStoredData && <button onClick={handleSaveOriginal}>기존 원본 백업</button>}
+                {rawStoredData && <button onClick={handleSaveOriginal}>{lwoText('기존 원본 백업')}</button>}
                 {numericBackup && <>
-                  <button onClick={() => handleNumericBackup(false)}>수치 백업 내려받기</button>
-                  <button onClick={() => handleNumericBackup(true)}>수치 백업 복구</button>
-                  {!storageReadError && <button onClick={handleKeepOriginal}>기존 저장본 유지</button>}
+                  <button onClick={() => handleNumericBackup(false)}>{lwoText('수치 백업 내려받기')}</button>
+                  <button onClick={() => handleNumericBackup(true)}>{lwoText('수치 백업 복구')}</button>
+                  {!storageReadError && <button onClick={handleKeepOriginal}>{lwoText('기존 저장본 유지')}</button>}
                 </>}
               </>
-            : <button onClick={handleSave}>현재 데이터 JSON 저장</button>}
+            : <button onClick={handleSave}>{lwoText('현재 데이터 JSON 저장')}</button>}
         </div>}
         {pendingUnitSections.length > 0 && unitPromptDismissed && <div role="status" className="storage-warning">
-          <span>기존 면적/E/V 데이터의 길이 단위를 확인해야 계산할 수 있습니다.</span>
-          <button onClick={() => setUnitPromptDismissed(false)}>단위 확인</button>
+          <span>{lwoText('기존 면적/E/V 데이터의 길이 단위를 확인해야 계산할 수 있습니다.')}</span>
+          <button onClick={() => setUnitPromptDismissed(false)}>{lwoText('단위 확인')}</button>
         </div>}
         <div className="module-wrap">
           {renderModule()}
@@ -369,24 +400,25 @@ export default function App() {
             onClick={() => setActiveTab(tab.id)}
           >
             <span className="nav-icon">{tab.icon}</span>
-            <span className="nav-label">{tab.short}</span>
+            <span className="nav-label">{lwoText(tab.short)}</span>
           </button>
         ))}
       </nav>
 
       {unitSection && !unitPromptDismissed && <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="unit-choice-title">
         <div className="unit-choice-modal">
-          <h2 id="unit-choice-title">기존 길이 단위 확인</h2>
+          <h2 id="unit-choice-title">{lwoText('기존 길이 단위 확인')}</h2>
           <p>
-            {unitSection === 'area' ? '면적 효율' : 'E/V 부하율'} 데이터에 단위 정보가 없습니다.
-            값만으로 m와 mm를 구별할 수 없어 자동 변환하지 않았습니다.
+            {lwoText('{section} 데이터에 단위 정보가 없습니다. 값만으로 m와 mm를 구별할 수 없어 자동 변환하지 않았습니다.', {
+              section: lwoText(unitSection === 'area' ? '면적 효율' : 'E/V 부하율')
+            })}
           </p>
-          <p>이 항목의 기존 값이 모두 어떤 단위로 입력됐는지 확인해 주세요. 단위가 섞였다면 m로 유지한 뒤 각 값을 직접 확인하세요.</p>
+          <p>{lwoText('이 항목의 기존 값이 모두 어떤 단위로 입력됐는지 확인해 주세요. 단위가 섞였다면 m로 유지한 뒤 각 값을 직접 확인하세요.')}</p>
           <div className="unit-choice-actions">
-            <button onClick={() => setState(current => resolveLengthUnit(current, unitSection, 'm'))}>m로 입력함 (값 유지)</button>
-            <button onClick={() => setState(current => resolveLengthUnit(current, unitSection, 'mm'))}>mm로 입력함 (m로 변환)</button>
-            <button onClick={handleSave}>변환 전 JSON 저장</button>
-            <button onClick={() => setUnitPromptDismissed(true)}>나중에 확인</button>
+            <button onClick={() => setState(current => resolveLengthUnit(current, unitSection, 'm'))}>{lwoText('m로 입력함 (값 유지)')}</button>
+            <button onClick={() => setState(current => resolveLengthUnit(current, unitSection, 'mm'))}>{lwoText('mm로 입력함 (m로 변환)')}</button>
+            <button onClick={handleSave}>{lwoText('변환 전 JSON 저장')}</button>
+            <button onClick={() => setUnitPromptDismissed(true)}>{lwoText('나중에 확인')}</button>
           </div>
         </div>
       </div>}

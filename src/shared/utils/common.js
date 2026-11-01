@@ -1,3 +1,5 @@
+import { lwoText } from '../../i18n'
+
 /**
  * 숫자 변환 및 계산 유틸리티
  */
@@ -32,7 +34,7 @@ export function nOr(v, fallback = 0) {
 export function fmtN(v, unit = '', decimals = 2, allowZero = false) {
   if (v === null || v === undefined || isNaN(v) || !isFinite(v)) return '—';
   if (v > 0 || (allowZero && v === 0)) {
-    return `${v.toLocaleString(undefined, { maximumFractionDigits: decimals })}${unit}`;
+    return `${v.toLocaleString(undefined, { maximumFractionDigits: decimals })}${lwoText(unit)}`;
   }
   return '—';
 }

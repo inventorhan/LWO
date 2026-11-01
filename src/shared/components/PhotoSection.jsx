@@ -1,3 +1,4 @@
+import { lwoText } from '../../i18n'
 import { useState } from 'react'
 
 /**
@@ -13,11 +14,11 @@ export default function PhotoSection({ title, photos, onAdd, onRemove }) {
       <div className="photo-gallery">
         {list.map((url, i) => (
           <div key={i} className="photo-item" onClick={() => setPreview(url)}
-               style={{ cursor: 'zoom-in' }} title="클릭하여 확대">
+               style={{ cursor: 'zoom-in' }} title={lwoText('클릭하여 확대')}>
             <img src={url} alt={`${title || ''} ${i + 1}`} />
             <button
               onClick={(e) => { e.stopPropagation(); onRemove(i) }}
-              aria-label="사진 삭제"
+              aria-label={lwoText('사진 삭제')}
               style={{
                 position: 'absolute', top: 2, right: 2,
                 width: 22, height: 22, background: 'rgba(239, 68, 68, 0.95)',
@@ -34,7 +35,7 @@ export default function PhotoSection({ title, photos, onAdd, onRemove }) {
           fontSize: '0.72rem', gap: 4, padding: 0, cursor: 'pointer'
         }}>
           <span style={{ fontSize: '1.4rem' }}>📷</span>
-          <span>{list.length > 0 ? '추가' : '촬영'}</span>
+          <span>{lwoText(list.length > 0 ? '추가' : '촬영')}</span>
           <input
             type="file" accept="image/*" capture="environment"
             style={{ display: 'none' }}
@@ -46,7 +47,7 @@ export default function PhotoSection({ title, photos, onAdd, onRemove }) {
       {preview && (
         <div className="modal-overlay" onClick={() => setPreview(null)}
              style={{ cursor: 'zoom-out' }}>
-          <img src={preview} alt="미리보기"
+          <img src={preview} alt={lwoText('미리보기')}
                style={{ maxWidth: '92vw', maxHeight: '88vh', borderRadius: 8, boxShadow: '0 20px 60px rgba(0,0,0,0.4)' }}
                onClick={e => e.stopPropagation()} />
           <button

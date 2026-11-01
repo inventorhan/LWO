@@ -1,3 +1,4 @@
+import { lwoText } from '../i18n'
 import { useState } from 'react'
 import ExcelJS from 'exceljs'
 import { n, fmtN } from '../shared/utils/common'
@@ -268,7 +269,7 @@ export default function WarehouseArea({ data, updateData }) {
     setActiveIdx(next.length - 1)
   }
   const removeItem = (id) => {
-    if (window.confirm('이 Item을 삭제하시겠습니까?')) {
+    if (window.confirm(lwoText('이 Item을 삭제하시겠습니까?'))) {
       if (items.length <= 1) {
         setItems([mode === 'uph' ? newUphItem() : newContainerItem()])
         setActiveIdx(0)
@@ -282,14 +283,14 @@ export default function WarehouseArea({ data, updateData }) {
     try {
       const imported = await readWorkbook(file, mode)
       if (imported.length === 0) {
-        window.alert('엑셀에서 물류 창고 면적 입력 컬럼을 찾지 못했습니다.')
+        window.alert(lwoText('엑셀에서 물류 창고 면적 입력 컬럼을 찾지 못했습니다.'))
         return
       }
       setItems(imported)
       setActiveIdx(0)
     } catch (err) {
       console.error(err)
-      window.alert('엑셀 파일을 읽는 중 오류가 발생했습니다.')
+      window.alert(lwoText('엑셀 파일을 읽는 중 오류가 발생했습니다.'))
     }
   }
 
@@ -303,50 +304,40 @@ export default function WarehouseArea({ data, updateData }) {
 
   return (
     <div style={{ animation: 'fadeIn 0.3s ease' }}>
-      <div className="module-title">물류 창고 면적 산출</div>
+      <div className="module-title">{lwoText('물류 창고 면적 산출')}</div>
 
       <div className="section-card">
         <div className="module-action-bar">
           <div className="section-title" style={{ marginBottom: 0, border: 'none', padding: 0 }}>
-            물류 필요 면적 합계
-            <HelpHint title="물류 창고 면적">
-              <p>상단 기준 선택에 따라 입력 항목이 바뀌며, Item별 필요 면적을 합산합니다.</p>
-              <HintFormula>{`[UPH 기준]
-일 생산수량 = UPH × 작업 시간
-일 적재 수량 = 일 생산수량 ÷ 수용수
-공급 포함 적재수량 = 일 적재 수량 × 1.3 (공급버퍼 30%)
-단위 면적 = 용기 Size 가로 × 용기 Size 세로
-최종 적정 면적 = 공급 포함 적재수량 × (단위 면적 × 면적 여유율)
-
-[용기 사이즈 기준]
-바닥 적재 수량 = 가로 개수 × 세로 개수
-단위 면적 = 가로 길이 × 세로 길이
-필요 면적 = 바닥 적재 수량 × 단위 면적 × 여유율`}</HintFormula>
-              <HintNote>상단에서 기준을 바꾸면 입력 화면과 엑셀 양식이 함께 바뀝니다.</HintNote>
+            {lwoText('물류 필요 면적 합계')}
+            <HelpHint title={lwoText('물류 창고 면적')}>
+              <p>{lwoText('상단 기준 선택에 따라 입력 항목이 바뀌며, Item별 필요 면적을 합산합니다.')}</p>
+              <HintFormula>{lwoText('[UPH 기준]\n일 생산수량 = UPH × 작업 시간\n일 적재 수량 = 일 생산수량 ÷ 수용수\n공급 포함 적재수량 = 일 적재 수량 × 1.3 (공급버퍼 30%)\n단위 면적 = 용기 Size 가로 × 용기 Size 세로\n최종 적정 면적 = 공급 포함 적재수량 × (단위 면적 × 면적 여유율)\n\n[용기 사이즈 기준]\n바닥 적재 수량 = 가로 개수 × 세로 개수\n단위 면적 = 가로 길이 × 세로 길이\n필요 면적 = 바닥 적재 수량 × 단위 면적 × 여유율')}</HintFormula>
+              <HintNote>{lwoText('상단에서 기준을 바꾸면 입력 화면과 엑셀 양식이 함께 바뀝니다.')}</HintNote>
             </HelpHint>
           </div>
           <div className="action-row">
             <label className="btn btn-soft">
-              엑셀 일괄 입력
+              {lwoText('엑셀 일괄 입력')}
               <input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 style={{ display: 'none' }}
                 onChange={e => { if (e.target.files?.[0]) importExcel(e.target.files[0]); e.target.value = '' }} />
             </label>
-            <button className="btn btn-soft" onClick={() => downloadTemplate(mode)}>엑셀 다운로드</button>
+            <button className="btn btn-soft" onClick={() => downloadTemplate(mode)}>{lwoText('엑셀 다운로드')}</button>
           </div>
         </div>
 
         <div className="segmented-control warehouse-mode-control" style={{ marginBottom: 12 }}>
-          <button className={`segmented-btn ${mode === 'uph' ? 'active' : ''}`} onClick={() => setMode('uph')}>필요면적(UPH 기준)</button>
-          <button className={`segmented-btn ${mode === 'container' ? 'active' : ''}`} onClick={() => setMode('container')}>필요면적(용기 사이즈 기준)</button>
+          <button className={`segmented-btn ${mode === 'uph' ? 'active' : ''}`} onClick={() => setMode('uph')}>{lwoText('필요면적(UPH 기준)')}</button>
+          <button className={`segmented-btn ${mode === 'container' ? 'active' : ''}`} onClick={() => setMode('container')}>{lwoText('필요면적(용기 사이즈 기준)')}</button>
         </div>
 
         <div className="result-box full-width tone-final" style={{ marginBottom: 14 }}>
-          <span className="result-box__label">물류 필요 면적 합계</span>
+          <span className="result-box__label">{lwoText('물류 필요 면적 합계')}</span>
           <span className="result-box__value">
             {fmtN(totals, ' m²', 1)}
             <span style={{ fontSize: '0.78rem', fontWeight: 600, marginLeft: 10, opacity: 0.9 }}>
-              Item별 필요 면적 합산
+              {lwoText('Item별 필요 면적 합산')}
             </span>
           </span>
         </div>
@@ -357,57 +348,57 @@ export default function WarehouseArea({ data, updateData }) {
               {item.itemName || `Item-${idx + 1}`}
             </button>
           ))}
-          <button className="mini-tab add" onClick={addItem}>+ Item 추가</button>
+          <button className="mini-tab add" onClick={addItem}>{lwoText('+ Item 추가')}</button>
         </div>
 
         {active && mode === 'uph' && (
           <div className="warehouse-item">
             <div className="warehouse-item__head">
               <strong>{active.itemName || `Item ${safeIdx + 1}`}</strong>
-              <button className="mini-btn" onClick={() => removeItem(active.id)}>삭제</button>
+              <button className="mini-btn" onClick={() => removeItem(active.id)}>{lwoText('삭제')}</button>
             </div>
             <div className="warehouse-flow">
               <div className="warehouse-group">
-                <div className="warehouse-group__title">일 적재 수량</div>
+                <div className="warehouse-group__title">{lwoText('일 적재 수량')}</div>
                 <div className="warehouse-row">
-                  <WarehouseField label="적재 Item">
+                  <WarehouseField label={lwoText('적재 Item')}>
                     <input className="input-field" value={active.itemName}
-                      onChange={e => updateItem(active.id, { itemName: e.target.value })} placeholder="예: Lotte(BW)" />
+                      onChange={e => updateItem(active.id, { itemName: e.target.value })} placeholder={lwoText('예: Lotte(BW)')} />
                   </WarehouseField>
-                  <WarehouseField label="적재 종류">
+                  <WarehouseField label={lwoText('적재 종류')}>
                     <select className="input-field" value={active.warehouseType}
                       onChange={e => updateItem(active.id, { warehouseType: e.target.value })}>
-                      {WAREHOUSE_TYPES.map(v => <option key={v}>{v}</option>)}
+                      {WAREHOUSE_TYPES.map(v => <option key={v} value={v}>{lwoText(v)}</option>)}
                     </select>
                   </WarehouseField>
                   <WarehouseField label="UPH">
                     <input className="input-field" type="number" min={0} value={active.uph}
                       onChange={e => updateItem(active.id, { uph: e.target.value })} />
                   </WarehouseField>
-                  <WarehouseField label="작업 시간">
+                  <WarehouseField label={lwoText('작업 시간')}>
                     <input className="input-field" type="number" min={0} value={active.hours}
                       onChange={e => updateItem(active.id, { hours: e.target.value })} />
                   </WarehouseField>
-                  <WarehouseField label="수용수">
+                  <WarehouseField label={lwoText('수용수')}>
                     <input className="input-field" type="number" min={0} value={active.capacity}
                       onChange={e => updateItem(active.id, { capacity: e.target.value })} />
                   </WarehouseField>
                 </div>
-                <WarehouseResult label="일 생산수량 = UPH × 작업 시간" value={fmtN(calc.dailyQty, '', 0)} tone="blue" />
-                <WarehouseResult label="일 적재 수량 = 일 생산수량 ÷ 수용수" value={fmtN(calc.dailyLoadQty, '', 1)} tone="final" />
+                <WarehouseResult label={lwoText('일 생산수량 = UPH × 작업 시간')} value={fmtN(calc.dailyQty, '', 0)} tone="blue" />
+                <WarehouseResult label={lwoText('일 적재 수량 = 일 생산수량 ÷ 수용수')} value={fmtN(calc.dailyLoadQty, '', 1)} tone="final" />
               </div>
               <div className="warehouse-group">
-                <div className="warehouse-group__title">최종 적정 면적</div>
+                <div className="warehouse-group__title">{lwoText('최종 적정 면적')}</div>
                 <div className="warehouse-row">
-                  <WarehouseField label="용기 Size 가로">
+                  <WarehouseField label={lwoText('용기 Size 가로')}>
                     <input className="input-field" type="number" min={0} step="0.01" value={active.length}
                       onChange={e => updateItem(active.id, { length: e.target.value })} />
                   </WarehouseField>
-                  <WarehouseField label="용기 Size 세로">
+                  <WarehouseField label={lwoText('용기 Size 세로')}>
                     <input className="input-field" type="number" min={0} step="0.01" value={active.width}
                       onChange={e => updateItem(active.id, { width: e.target.value })} />
                   </WarehouseField>
-                  <WarehouseField label="면적 여유율 (용기 단위)">
+                  <WarehouseField label={lwoText('면적 여유율 (용기 단위)')}>
                     <select className="input-field"
                       value={uphMarginCustom ? 'custom' : String(uphMarginVal)}
                       onChange={e => {
@@ -419,20 +410,20 @@ export default function WarehouseArea({ data, updateData }) {
                         }
                       }}>
                       {MARGIN_PRESETS.map(p => (
-                        <option key={p.label} value={p.value}>{p.label} ({Math.round(p.value * 100)}%)</option>
+                        <option key={p.label} value={p.value}>{lwoText(p.label)} ({Math.round(p.value * 100)}%)</option>
                       ))}
-                      <option value="custom">직접 입력</option>
+                      <option value="custom">{lwoText('직접 입력')}</option>
                     </select>
                     {uphMarginCustom && (
                       <input className="input-field" type="number" min={0} step="0.01" value={active.margin}
                         onChange={e => updateItem(active.id, { margin: e.target.value })}
-                        placeholder="배수 (예: 2.2 = 220%)" style={{ marginTop: 6 }} />
+                        placeholder={lwoText('배수 (예: 2.2 = 220%)')} style={{ marginTop: 6 }} />
                     )}
                   </WarehouseField>
                 </div>
-                <WarehouseResult label="공급 포함 적재수량 = 일 적재수량 × 1.3 (공급버퍼 30%)" value={fmtN(calc.effectiveQty, '', 1)} tone="blue" />
-                <WarehouseResult label="단위 면적 = 용기 Size 가로 × 용기 Size 세로" value={fmtN(calc.unitArea, ' m²', 2)} tone="blue" />
-                <WarehouseResult label="최종 적정 면적 = 공급포함적재수량 × (단위면적 × 면적여유율)" value={fmtN(calc.finalArea, ' m²', 1)} tone="final" />
+                <WarehouseResult label={lwoText('공급 포함 적재수량 = 일 적재수량 × 1.3 (공급버퍼 30%)')} value={fmtN(calc.effectiveQty, '', 1)} tone="blue" />
+                <WarehouseResult label={lwoText('단위 면적 = 용기 Size 가로 × 용기 Size 세로')} value={fmtN(calc.unitArea, ' m²', 2)} tone="blue" />
+                <WarehouseResult label={lwoText('최종 적정 면적 = 공급포함적재수량 × (단위면적 × 면적여유율)')} value={fmtN(calc.finalArea, ' m²', 1)} tone="final" />
               </div>
             </div>
           </div>
@@ -442,68 +433,68 @@ export default function WarehouseArea({ data, updateData }) {
           <div className="warehouse-item">
             <div className="warehouse-item__head">
               <strong>{active.itemName || `Item ${safeIdx + 1}`}</strong>
-              <button className="mini-btn" onClick={() => removeItem(active.id)}>삭제</button>
+              <button className="mini-btn" onClick={() => removeItem(active.id)}>{lwoText('삭제')}</button>
             </div>
             <div className="warehouse-flow">
               <div className="warehouse-group">
-                <div className="warehouse-group__title">기초 정보</div>
+                <div className="warehouse-group__title">{lwoText('기초 정보')}</div>
                 <div className="warehouse-row">
-                  <WarehouseField label="적재 Item">
+                  <WarehouseField label={lwoText('적재 Item')}>
                     <input className="input-field" value={active.itemName}
-                      onChange={e => updateItem(active.id, { itemName: e.target.value })} placeholder="예: Lotte(BW)" />
+                      onChange={e => updateItem(active.id, { itemName: e.target.value })} placeholder={lwoText('예: Lotte(BW)')} />
                   </WarehouseField>
-                  <WarehouseField label="적재 종류">
+                  <WarehouseField label={lwoText('적재 종류')}>
                     <select className="input-field" value={active.warehouseType}
                       onChange={e => updateItem(active.id, { warehouseType: e.target.value })}>
-                      {WAREHOUSE_TYPES.map(v => <option key={v}>{v}</option>)}
+                      {WAREHOUSE_TYPES.map(v => <option key={v} value={v}>{lwoText(v)}</option>)}
                     </select>
                   </WarehouseField>
                   <WarehouseField label="UPH">
                     <input className="input-field" type="number" min={0} value={active.uph}
                       onChange={e => updateItem(active.id, { uph: e.target.value })} />
                   </WarehouseField>
-                  <WarehouseField label="일 생산수량">
+                  <WarehouseField label={lwoText('일 생산수량')}>
                     <input className="input-field" type="number" min={0} value={active.dailyQty}
                       onChange={e => updateItem(active.id, { dailyQty: e.target.value })} />
                   </WarehouseField>
                 </div>
               </div>
               <div className="warehouse-group">
-                <div className="warehouse-group__title">바닥 적재 수량</div>
+                <div className="warehouse-group__title">{lwoText('바닥 적재 수량')}</div>
                 <div className="warehouse-row">
-                  <WarehouseField label="가로 개수">
+                  <WarehouseField label={lwoText('가로 개수')}>
                     <input className="input-field" type="number" min={0} value={active.countX}
                       onChange={e => updateItem(active.id, { countX: e.target.value })} />
                   </WarehouseField>
-                  <WarehouseField label="세로 개수">
+                  <WarehouseField label={lwoText('세로 개수')}>
                     <input className="input-field" type="number" min={0} value={active.countY}
                       onChange={e => updateItem(active.id, { countY: e.target.value })} />
                   </WarehouseField>
-                  <WarehouseField label="높이(단)">
+                  <WarehouseField label={lwoText('높이(단)')}>
                     <input className="input-field" type="number" min={1} value={active.stackLevel}
                       onChange={e => updateItem(active.id, { stackLevel: e.target.value })} />
                   </WarehouseField>
                 </div>
-                <WarehouseResult label="바닥 적재 수량 = 가로 개수 × 세로 개수" value={fmtN(calc.floorQty, '', 0)} tone="final" />
+                <WarehouseResult label={lwoText('바닥 적재 수량 = 가로 개수 × 세로 개수')} value={fmtN(calc.floorQty, '', 0)} tone="final" />
               </div>
               <div className="warehouse-group">
-                <div className="warehouse-group__title">필요 면적</div>
+                <div className="warehouse-group__title">{lwoText('필요 면적')}</div>
                 <div className="warehouse-row">
-                  <WarehouseField label="가로 길이">
+                  <WarehouseField label={lwoText('가로 길이')}>
                     <input className="input-field" type="number" min={0} step="0.01" value={active.length}
                       onChange={e => updateItem(active.id, { length: e.target.value })} />
                   </WarehouseField>
-                  <WarehouseField label="세로 길이">
+                  <WarehouseField label={lwoText('세로 길이')}>
                     <input className="input-field" type="number" min={0} step="0.01" value={active.width}
                       onChange={e => updateItem(active.id, { width: e.target.value })} />
                   </WarehouseField>
-                  <WarehouseField label="여유율">
+                  <WarehouseField label={lwoText('여유율')}>
                     <input className="input-field" type="number" min={0} step="0.1" value={active.margin}
                       onChange={e => updateItem(active.id, { margin: e.target.value })} />
                   </WarehouseField>
                 </div>
-                <WarehouseResult label="단위 면적 = 가로 길이 × 세로 길이" value={fmtN(calc.unitArea, ' m²', 2)} tone="blue" />
-                <WarehouseResult label="필요 면적 = 바닥 적재 수량 × 단위 면적 × 여유율" value={fmtN(calc.finalArea, ' m²', 1)} tone="final" />
+                <WarehouseResult label={lwoText('단위 면적 = 가로 길이 × 세로 길이')} value={fmtN(calc.unitArea, ' m²', 2)} tone="blue" />
+                <WarehouseResult label={lwoText('필요 면적 = 바닥 적재 수량 × 단위 면적 × 여유율')} value={fmtN(calc.finalArea, ' m²', 1)} tone="final" />
               </div>
             </div>
           </div>
