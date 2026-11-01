@@ -12,7 +12,8 @@ const TABS = [
   { id: 'amr',       icon: '🤖', title: 'AMR 대수' },
   { id: 'personnelPlan', icon: '👥', title: '물류 적정 인원' },
   { id: 'warehouseArea', icon: '🏭', title: '물류 창고 면적' },
-  { id: 'automationRate', icon: '⚙️', title: '물류 자동화율' }
+  { id: 'automationRate', icon: '⚙️', title: '물류 자동화율' },
+  { id: 'license',   icon: '⚖️', title: '라이선스 & 면책' }
 ]
 
 const C = {
@@ -614,6 +615,46 @@ Re-Handling율(%) = Re-Handling Item 수 ÷ 총 입고 Item 수 × 100`}</Formul
   </>
 )
 
+const LicenseContent = () => (
+  <>
+    <Section title={lwoText('오픈소스 라이선스 & 법적 면책 고지')}>
+      <p>LWO (Logistics Work Optimizer)는 제조 및 물류 현장의 생산성 향상을 위해 <b>무상으로 제공되는 소프트웨어</b>입니다.</p>
+    </Section>
+
+    <Section title={lwoText('법적 책임 제한 및 보증 부인 (AS-IS)')}>
+      <Tip type="warn">
+        <b>[무보증 원칙]</b> 본 소프트웨어는 어떠한 명시적·묵시적 보증 없이 <b>'있는 그대로(AS-IS)'</b> 제공됩니다. 상품성 및 특정 목적 적합성을 보증하지 않습니다.<br/>
+        <b>[책임 제한]</b> 물류 KPI 계산, 적정 재고/인원/면적 시뮬레이션 결과의 오차로 인한 직접·간접적 손해에 대해 개발자 및 제공자는 법적 책임을 지지 않습니다. 설비 투자나 배치 변경 전 반드시 사내 엔지니어의 현장 실측 및 교차 검증을 거쳐야 합니다.
+      </Tip>
+    </Section>
+
+    <Section title={lwoText('데이터 프라이버시 및 사내 보안')}>
+      <Tip type="ok">
+        <b>[로컬 완결 저장]</b> 모든 측정 수치와 계산 결과는 사용자의 기기(브라우저 LocalStorage)에만 저장되며, 외부 서버로 전송되거나 수집되지 않습니다. 사내 물류 기밀이 안전하게 보호됩니다.
+      </Tip>
+    </Section>
+
+    <Section title={lwoText('제3자 오픈소스 라이선스 고지')}>
+      <Table
+        headers={['구성 요소', '라이선스', '용도 및 저작권']}
+        rows={[
+          ['React & React-DOM', 'MIT', '웹 및 모바일 UI 프론트엔드 프레임워크 (Meta)'],
+          ['Ionic Capacitor', 'MIT', '안드로이드 및 모바일 네이티브 런타임 (Ionic)'],
+          ['ExcelJS', 'MIT', '물류 KPI 엑셀(.xlsx) 내보내기 라이브러리'],
+          ['FileSaver.js', 'MIT', '클라이언트 파일 저장 및 공유'],
+          ['Electron', 'MIT', 'Windows 데스크톱 독립 실행형 패키징']
+        ]}
+      />
+      <p style={{ marginTop: 12, fontSize: '0.85rem' }}>
+        • 상세 오픈소스 라이선스 전문 및 고지문은 NOL-IS 웹사이트에서 확인하실 수 있습니다:<br/>
+        <a href="https://nol-is.win/licenses.html" target="_blank" rel="noopener noreferrer" style={{ color: C.primary, fontWeight: 700, textDecoration: 'underline' }}>
+          https://nol-is.win/licenses.html (새 창)
+        </a>
+      </p>
+    </Section>
+  </>
+)
+
 const CONTENTS = {
   intro: IntroContent,
   worker: WorkerContent,
@@ -624,7 +665,8 @@ const CONTENTS = {
   amr: AmrContent,
   personnelPlan: PersonnelPlanContent,
   warehouseArea: WarehouseAreaContent,
-  automationRate: AutomationRateContent
+  automationRate: AutomationRateContent,
+  license: LicenseContent
 }
 
 export default function HelpModal({ open, onClose }) {
