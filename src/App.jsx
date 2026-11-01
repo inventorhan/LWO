@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { useAppState, initialState, migrateAppState } from './store'
+import { useAppState, initialState, migrateAppState, resolveLengthUnit } from './store'
 import WorkerWorkload from './modules/WorkerWorkload'
 import ElevatorWorkload from './modules/ElevatorWorkload'
 import AreaEfficiency from './modules/AreaEfficiency'
@@ -27,7 +27,9 @@ const TABS = [
 
 export default function App() {
   const {
-    state, setState, updateWorker, updateArea, updateInventory, updateAmr,
+    state, setState, storageWarning, storageBlocked, setStorageBlocked, rawStoredData,
+    storageReadError, numericBackup, setNumericBackup,
+    updateWorker, updateArea, updateInventory, updateAmr,
     updateLogisticsPersonnel, updateWarehouseArea, updateAutomationRate,
     addPhoto, removePhoto, addPersonnel, removePersonnel, updatePersonnel,
     addCycle, removeCycle, updateCycleCard, addCardInCycle, removeCardInCycle,
@@ -47,6 +49,7 @@ export default function App() {
   const [inventoryMode, setInventoryMode] = useState('uph')
   const [toast, setToast] = useState('')
   const [helpOpen, setHelpOpen] = useState(false)
+  const [unitPromptDismissed, setUnitPromptDismissed] = useState(false)
   const toastTimer = useRef(null)
   const bottomNavRef = useRef(null)
 
@@ -64,13 +67,8 @@ export default function App() {
     toastTimer.current = setTimeout(() => setToast(''), 2400)
   }
 
-  useEffect(() => {
-    const handleStorageWarn = (e) => {
-      showToast(`⚠️ ${e.detail || '저장 공간이 부족합니다.'}`)
-    }
-    window.addEventListener('lwo-storage-warning', handleStorageWarn)
-    return () => window.removeEventListener('lwo-storage-warning', handleStorageWarn)
-  }, [])
+  const pendingUnitSections = ['area', 'elevator'].filter(section => state[section]?._unit === 'unknown')
+  const unitSection = pendingUnitSections[0]
 
   const handleSave = async () => {
     try {
@@ -91,7 +89,11 @@ export default function App() {
     reader.onload = (ev) => {
       try {
         const loaded = JSON.parse(ev.target.result)
+        if (storageBlocked && rawStoredData && !window.confirm('읽을 수 없는 기존 저장본을 새 파일로 교체합니다. 원본 백업을 먼저 내려받았습니까?')) return
         setState(migrateAppState(loaded))
+        setNumericBackup(null)
+        setStorageBlocked(false)
+        setUnitPromptDismissed(false)
         showToast('📂 데이터를 불러왔습니다.')
       } catch {
         showToast('⚠️ 파일 형식이 잘못되었습니다.')
@@ -102,6 +104,11 @@ export default function App() {
   }
 
   const handleExportExcel = async () => {
+    if (pendingUnitSections.length) {
+      setUnitPromptDismissed(false)
+      showToast('⚠️ 면적/E/V 길이 단위를 먼저 확인해 주세요.')
+      return
+    }
     try {
       await exportToExcel(state)
       showToast('📊 엑셀 저장 완료 (Documents/LWO/)')
@@ -113,10 +120,58 @@ export default function App() {
 
   const handleReset = () => {
     if (window.confirm('모든 입력 데이터를 초기화합니다. 진행하시겠습니까?')) {
+      try {
+        localStorage.removeItem('lwo_app_persistent_data')
+        localStorage.removeItem('lwo_app_persistent_data_measurements_backup')
+      } catch (err) {
+        console.error('저장 데이터 초기화 실패:', err)
+        showToast('⚠️ 저장 데이터 초기화에 실패했습니다.')
+        return
+      }
       setState(initialState)
-      try { localStorage.removeItem('lwo_app_persistent_data') } catch { /* ignore local reset failures */ }
+      setNumericBackup(null)
+      setStorageBlocked(false)
       showToast('🔄 초기화되었습니다.')
     }
+  }
+
+  const handleSaveOriginal = async () => {
+    if (!rawStoredData) {
+      showToast('⚠️ 내려받을 기존 저장본을 읽을 수 없습니다.')
+      return
+    }
+    try {
+      await saveJson('LWO_기존_저장원본.txt', rawStoredData)
+      showToast('💾 기존 저장 원본을 내려받았습니다.')
+    } catch (err) {
+      console.error(err)
+      showToast('⚠️ 원본 백업 저장에 실패했습니다.')
+    }
+  }
+
+  const handleNumericBackup = async (restore) => {
+    try {
+      if (!numericBackup) throw new Error('수치 임시 백업이 없습니다.')
+      if (!restore) {
+        await saveJson('LWO_수치_임시백업.json', numericBackup)
+        showToast('💾 수치 임시 백업을 내려받았습니다.')
+        return
+      }
+      if (!window.confirm('수치 임시 백업에는 사진이 없습니다. 기존 저장본을 백업하고 이 수치로 복구하시겠습니까?')) return
+      setState(migrateAppState(JSON.parse(numericBackup)))
+      setNumericBackup(null)
+      setStorageBlocked(false)
+      setUnitPromptDismissed(false)
+    } catch (err) {
+      console.error('수치 임시 백업 처리 실패:', err)
+      showToast('⚠️ 수치 임시 백업을 처리하지 못했습니다.')
+    }
+  }
+
+  const handleKeepOriginal = () => {
+    if (!window.confirm('수치 임시 백업을 사용하지 않고 기존 저장본을 유지합니다. 필요한 경우 먼저 수치 백업을 내려받으세요.')) return
+    setNumericBackup(null)
+    setStorageBlocked(false)
   }
 
   /* 사진 추가/삭제 wrap — 에러 시 사용자 알림 */
@@ -130,6 +185,12 @@ export default function App() {
   }
 
   const renderModule = () => {
+    if (['area', 'elevator'].includes(activeTab) && state[activeTab]?._unit === 'unknown') {
+      return <div className="section-card">
+        <p>기존 길이 단위를 확인하기 전에는 이 항목의 계산을 표시하지 않습니다.</p>
+        <button className="header-btn" onClick={() => setUnitPromptDismissed(false)}>단위 확인</button>
+      </div>
+    }
     switch (activeTab) {
       case 'worker':
         return <WorkerWorkload
@@ -277,6 +338,23 @@ export default function App() {
       <HelpModal open={helpOpen} onClose={() => setHelpOpen(false)} />
 
       <main className="app-content">
+        {storageWarning && <div role="alert" className="storage-warning">
+          <span>{storageWarning}</span>
+          {storageBlocked
+            ? <>
+                {rawStoredData && <button onClick={handleSaveOriginal}>기존 원본 백업</button>}
+                {numericBackup && <>
+                  <button onClick={() => handleNumericBackup(false)}>수치 백업 내려받기</button>
+                  <button onClick={() => handleNumericBackup(true)}>수치 백업 복구</button>
+                  {!storageReadError && <button onClick={handleKeepOriginal}>기존 저장본 유지</button>}
+                </>}
+              </>
+            : <button onClick={handleSave}>현재 데이터 JSON 저장</button>}
+        </div>}
+        {pendingUnitSections.length > 0 && unitPromptDismissed && <div role="status" className="storage-warning">
+          <span>기존 면적/E/V 데이터의 길이 단위를 확인해야 계산할 수 있습니다.</span>
+          <button onClick={() => setUnitPromptDismissed(false)}>단위 확인</button>
+        </div>}
         <div className="module-wrap">
           {renderModule()}
         </div>
@@ -296,6 +374,22 @@ export default function App() {
         ))}
       </nav>
 
+      {unitSection && !unitPromptDismissed && <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="unit-choice-title">
+        <div className="unit-choice-modal">
+          <h2 id="unit-choice-title">기존 길이 단위 확인</h2>
+          <p>
+            {unitSection === 'area' ? '면적 효율' : 'E/V 부하율'} 데이터에 단위 정보가 없습니다.
+            값만으로 m와 mm를 구별할 수 없어 자동 변환하지 않았습니다.
+          </p>
+          <p>이 항목의 기존 값이 모두 어떤 단위로 입력됐는지 확인해 주세요. 단위가 섞였다면 m로 유지한 뒤 각 값을 직접 확인하세요.</p>
+          <div className="unit-choice-actions">
+            <button onClick={() => setState(current => resolveLengthUnit(current, unitSection, 'm'))}>m로 입력함 (값 유지)</button>
+            <button onClick={() => setState(current => resolveLengthUnit(current, unitSection, 'mm'))}>mm로 입력함 (m로 변환)</button>
+            <button onClick={handleSave}>변환 전 JSON 저장</button>
+            <button onClick={() => setUnitPromptDismissed(true)}>나중에 확인</button>
+          </div>
+        </div>
+      </div>}
       {toast && <div className="toast">{toast}</div>}
     </div>
   )

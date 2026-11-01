@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { n, nOr, fmtN, calcArea, getGap } from '../src/shared/utils/common'
-import { migrateAppState } from '../src/store'
+import { initialState, loadStoredState, migrateAppState, resolveLengthUnit, saveStoredState } from '../src/store'
 
 describe('1. Common Utils (common.js)', () => {
   it('n() parses floats or returns 0', () => {
@@ -55,9 +55,10 @@ describe('2. State Migration (store.js)', () => {
     expect(migrated.inventoryStats.productList).toContain('세탁기')
   })
 
-  it('migrates legacy area from mm to m', () => {
+  it('migrates area explicitly marked mm to m', () => {
     const oldState = {
       area: {
+        _unit: 'mm',
         factory: { width: 50000, height: 30000 },
         zones: [
           { width: 10000, height: 8000, items: [{ width: 1200, depth: 800, minHeight: 500, maxHeight: 1700 }] }
@@ -72,6 +73,69 @@ describe('2. State Migration (store.js)', () => {
     expect(migrated.area.zones[0].height).toBe(8)
     expect(migrated.area.zones[0].items[0].width).toBe(1.2)
     expect(migrated.area.zones[0].items[0].depth).toBe(0.8)
+  })
+
+  it('keeps new metre values and asks before converting unmarked dimensions', () => {
+    expect(initialState.area._unit).toBe('m')
+    expect(initialState.elevator._unit).toBe('m')
+    const metreState = migrateAppState({ area: { _unit: 'm', factory: { width: 120 }, zones: [] } })
+    expect(metreState.area.factory.width).toBe(120)
+    const unknown = migrateAppState({ area: { factory: { width: 120 }, zones: [] } })
+    expect(unknown.area._unit).toBe('unknown')
+    expect(unknown.area.factory.width).toBe(120)
+    expect(resolveLengthUnit(unknown, 'area', 'm').area.factory.width).toBe(120)
+    expect(resolveLengthUnit(unknown, 'area', 'mm').area.factory.width).toBe(0.12)
+  })
+
+  it('preserves unmarked elevator dimensions until explicitly selected', () => {
+    const state = migrateAppState({
+      elevator: { dataByHogi: { '1': { basicInfo: { evWidth: 50, evDepth: 1200 }, loadItems: [{ width: 80 }] } } }
+    })
+    expect(state.elevator._unit).toBe('unknown')
+    const converted = resolveLengthUnit(state, 'elevator', 'mm')
+    expect(converted.elevator.dataByHogi['1'].basicInfo.evWidth).toBe(0.05)
+    expect(converted.elevator.dataByHogi['1'].basicInfo.evDepth).toBe(1.2)
+    expect(converted.elevator.dataByHogi['1'].loadItems[0].width).toBe(0.08)
+    expect(state.elevator.dataByHogi['1'].basicInfo.evWidth).toBe(50)
+  })
+
+  it('preserves corrupt storage and reports complete or partial save failure', () => {
+    const broken = '{broken'
+    const loaded = loadStoredState({ getItem: () => broken })
+    expect(loaded.raw).toBe(broken)
+    expect(loaded.error).toContain('자동 저장을 중지')
+
+    const entries = new Map([['lwo_app_persistent_data', 'previous full backup']])
+    const partialStorage = {
+      setItem(key, value) {
+        if (key === 'lwo_app_persistent_data') throw new Error('quota')
+        entries.set(key, value)
+      }
+    }
+    expect(saveStoredState(partialStorage, initialState)).toContain('수치만 별도 임시 보관')
+    expect(entries.get('lwo_app_persistent_data')).toBe('previous full backup')
+    expect(JSON.parse(entries.get('lwo_app_persistent_data_measurements_backup')).area).toBeDefined()
+    expect(saveStoredState({ setItem: () => { throw new Error('quota') } }, initialState)).toContain('모두 실패')
+  })
+
+  it('detects an earlier numeric backup and keeps it until a full save succeeds', () => {
+    const full = JSON.stringify(initialState)
+    const backup = JSON.stringify({ ...initialState, currentTab: 'measurements' })
+    const entries = new Map([
+      ['lwo_app_persistent_data', full],
+      ['lwo_app_persistent_data_measurements_backup', backup]
+    ])
+    const storage = {
+      getItem: key => entries.get(key) || null,
+      setItem: (key, value) => entries.set(key, value),
+      removeItem: key => entries.delete(key)
+    }
+    const loaded = loadStoredState(storage)
+    expect(loaded.raw).toBe(full)
+    expect(loaded.numericBackup).toBe(backup)
+    expect(entries.get('lwo_app_persistent_data_measurements_backup')).toBe(backup)
+    expect(saveStoredState(storage, initialState)).toBe('')
+    expect(entries.has('lwo_app_persistent_data_measurements_backup')).toBe(false)
   })
 
   it('migrates single elevator cards to dataByHogi structure', () => {

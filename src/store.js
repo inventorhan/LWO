@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { fileToBase64 } from './shared/utils/common'
 
 const STORAGE_KEY = 'lwo_app_persistent_data'
+const MEASUREMENT_BACKUP_KEY = `${STORAGE_KEY}_measurements_backup`
 
 /* ───── 초기 운반 종류 정의 (PPT 스펙 기준) ───── */
 const initialTransportTypes = {
@@ -69,6 +70,7 @@ export const initialState = {
     transportTypes: initialTransportTypes
   },
   elevator: {
+    _unit: 'm',
     /* 호기별 데이터: 1~9호기 각각 독립 측정 + 가중치 + 사진 */
     activeHogi: 1,
     /* 호기별 결과 비교를 위해 dataByHogi 저장 (key는 string '1'~'9') */
@@ -82,6 +84,7 @@ export const initialState = {
     }
   },
   area: {
+    _unit: 'm',
     factory: { width: '', height: '', photo: null },
     /* zones[i].items[j]: 박스/파렛트/대차 + 높이(최저/최고) + 최고 높이 점유율 */
     zones: [
@@ -128,38 +131,90 @@ export const initialState = {
   savedAt: null,
 }
 
+const convertMillimeters = (value) => {
+  if (value === '' || value === null || value === undefined) return value
+  const number = Number(value)
+  return Number.isFinite(number) ? Number((number / 1000).toFixed(6)) : value
+}
+
+function convertAreaFromMillimeters(area) {
+  return {
+    ...area,
+    _unit: 'm',
+    factory: area.factory ? {
+      ...area.factory,
+      width: convertMillimeters(area.factory.width),
+      height: convertMillimeters(area.factory.height)
+    } : area.factory,
+    zones: (area.zones || []).map(zone => ({
+      ...zone,
+      width: convertMillimeters(zone.width),
+      height: convertMillimeters(zone.height),
+      items: (zone.items || []).map(item => ({
+        ...item,
+        width: convertMillimeters(item.width),
+        depth: convertMillimeters(item.depth),
+        minHeight: convertMillimeters(item.minHeight),
+        maxHeight: convertMillimeters(item.maxHeight ?? item.height)
+      }))
+    }))
+  }
+}
+
+function convertElevatorFromMillimeters(elevator) {
+  const dataByHogi = {}
+  Object.entries(elevator.dataByHogi || {}).forEach(([key, hogi]) => {
+    dataByHogi[key] = {
+      ...hogi,
+      basicInfo: hogi.basicInfo ? {
+        ...hogi.basicInfo,
+        evWidth: convertMillimeters(hogi.basicInfo.evWidth),
+        evDepth: convertMillimeters(hogi.basicInfo.evDepth)
+      } : hogi.basicInfo,
+      loadItems: (hogi.loadItems || []).map(item => ({
+        ...item,
+        width: convertMillimeters(item.width),
+        depth: convertMillimeters(item.depth)
+      }))
+    }
+  })
+  return { ...elevator, _unit: 'm', dataByHogi }
+}
+
+const hasDimension = (values) => values.some(value => value !== '' && value !== null && value !== undefined && Number(value) !== 0)
+
+function hasAreaDimensions(area) {
+  return hasDimension([area.factory?.width, area.factory?.height]) ||
+    (area.zones || []).some(zone =>
+      hasDimension([zone.width, zone.height]) ||
+      (zone.items || []).some(item => hasDimension([item.width, item.depth, item.minHeight, item.maxHeight ?? item.height])))
+}
+
+function hasElevatorDimensions(elevator) {
+  return Object.values(elevator.dataByHogi || {}).some(hogi =>
+    hasDimension([hogi.basicInfo?.evWidth, hogi.basicInfo?.evDepth]) ||
+    (hogi.loadItems || []).some(item => hasDimension([item.width, item.depth])))
+}
+
+export function resolveLengthUnit(state, section, sourceUnit) {
+  if (!['area', 'elevator'].includes(section) || !['m', 'mm'].includes(sourceUnit)) {
+    throw new Error('Unsupported length unit selection')
+  }
+  const data = state[section]
+  const converted = sourceUnit === 'mm'
+    ? (section === 'area' ? convertAreaFromMillimeters(data) : convertElevatorFromMillimeters(data))
+    : { ...data, _unit: 'm' }
+  return { ...state, [section]: converted }
+}
+
 export function migrateAppState(parsed = {}) {
   if (!parsed || typeof parsed !== 'object') return initialState
 
-  // 구버전 area(mm 단위)를 m 단위로 마이그레이션 — 100 이상 값은 mm로 간주하고 ÷1000
-  const migrateAreaUnit = (parsedArea) => {
-    if (!parsedArea || parsedArea._unit === 'm') return parsedArea
-    const conv = (v) => {
-      const num = parseFloat(v)
-      if (!num) return v
-      return num >= 100 ? +(num / 1000).toFixed(2) : v
-    }
-    return {
-      ...parsedArea,
-      _unit: 'm',
-      factory: parsedArea.factory ? {
-        ...parsedArea.factory,
-        width: conv(parsedArea.factory.width),
-        height: conv(parsedArea.factory.height)
-      } : parsedArea.factory,
-      zones: (parsedArea.zones || []).map(z => ({
-        ...z,
-        width: conv(z.width),
-        height: conv(z.height),
-        items: (z.items || []).map(it => ({
-          ...it,
-          width: conv(it.width),
-          depth: conv(it.depth),
-          minHeight: conv(it.minHeight),
-          maxHeight: conv(it.maxHeight ?? it.height)
-        }))
-      }))
-    }
+  let migratedArea = parsed.area
+  if (migratedArea && migratedArea._unit !== 'm') {
+    migratedArea = migratedArea._unit === 'mm'
+      ? convertAreaFromMillimeters(migratedArea)
+      : { ...migratedArea, _unit: hasAreaDimensions(migratedArea) ? 'unknown' : 'm' }
   }
 
   // 구버전 elevator(단일 cards)를 호기별 구조로 마이그레이션
@@ -167,6 +222,7 @@ export function migrateAppState(parsed = {}) {
   if (migratedElevator && Array.isArray(migratedElevator.cards) && !migratedElevator.dataByHogi) {
     const oldHogi = migratedElevator.basicInfo?.hogiNo || 1
     migratedElevator = {
+      _unit: migratedElevator._unit,
       activeHogi: oldHogi,
       dataByHogi: {
         [String(oldHogi)]: {
@@ -182,26 +238,23 @@ export function migrateAppState(parsed = {}) {
       }
     }
   }
-  // E/V 단위 mm → m 마이그레이션 (100 이상이면 mm로 간주)
-  if (migratedElevator && migratedElevator.dataByHogi && migratedElevator._unit !== 'm') {
-    const convM = (v) => {
-      const num = parseFloat(v)
-      if (!num) return v
-      return num >= 100 ? +(num / 1000).toFixed(2) : v
+  if (migratedElevator?.dataByHogi) {
+    migratedElevator = {
+      ...migratedElevator,
+      dataByHogi: Object.fromEntries(Object.entries(migratedElevator.dataByHogi).map(([key, hogi]) => [
+        key,
+        hogi.basicInfo ? {
+          ...hogi,
+          basicInfo: { ...hogi.basicInfo, stackLevel: hogi.basicInfo.stackLevel ?? hogi.loadItems?.[0]?.stackLevel ?? 4 }
+        } : hogi
+      ]))
     }
-    const next = {}
-    Object.entries(migratedElevator.dataByHogi).forEach(([k, h]) => {
-      next[k] = {
-        ...h,
-        basicInfo: h.basicInfo
-          ? { ...h.basicInfo, evWidth: convM(h.basicInfo.evWidth), evDepth: convM(h.basicInfo.evDepth), stackLevel: h.basicInfo.stackLevel ?? h.loadItems?.[0]?.stackLevel ?? 4 }
-          : h.basicInfo,
-        loadItems: (h.loadItems || []).map(it => ({
-          ...it, width: convM(it.width), depth: convM(it.depth)
-        }))
-      }
-    })
-    migratedElevator = { ...migratedElevator, _unit: 'm', dataByHogi: next }
+  }
+  // Unmarked legacy values are ambiguous; never infer their unit from magnitude.
+  if (migratedElevator && migratedElevator.dataByHogi && migratedElevator._unit !== 'm') {
+    migratedElevator = migratedElevator._unit === 'mm'
+      ? convertElevatorFromMillimeters(migratedElevator)
+      : { ...migratedElevator, _unit: hasElevatorDimensions(migratedElevator) ? 'unknown' : 'm' }
   }
 
   // 통계 마이그레이션 (v1.2.0 단일 records → dataByKey 구조)
@@ -236,7 +289,7 @@ export function migrateAppState(parsed = {}) {
       dataByPersonnel: (parsed.worker && parsed.worker.dataByPersonnel) || initialState.worker.dataByPersonnel
     },
     elevator: { ...initialState.elevator, ...(migratedElevator || {}) },
-    area: { ...initialState.area, ...(migrateAreaUnit(parsed.area) || {}) },
+    area: { ...initialState.area, ...(migratedArea || {}) },
     inventory: { ...initialState.inventory, ...(parsed.inventory || {}) },
     inventoryStats: migratedInvStats,
     amr: { ...initialState.amr, ...(parsed.amr || {}) },
@@ -278,38 +331,66 @@ function stripPhotosFromState(s) {
   return next
 }
 
-export function useAppState() {
-  const [state, setState] = useState(initialState)
-
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY)
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved)
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time localStorage hydration.
-        setState(migrateAppState(parsed))
-      } catch {
-        // 잘못된 저장 데이터는 무시하고 기본 상태로 시작
-      }
+export function loadStoredState(storage) {
+  let saved = null
+  let numericBackup = null
+  try {
+    const target = storage || window.localStorage
+    saved = target.getItem(STORAGE_KEY)
+    numericBackup = target.getItem(MEASUREMENT_BACKUP_KEY)
+    if (!saved) return { state: initialState, error: '', raw: saved, numericBackup }
+    const parsed = JSON.parse(saved)
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('Invalid saved state')
+    return { state: migrateAppState(parsed), error: '', raw: saved, numericBackup }
+  } catch (err) {
+    console.error('저장된 LWO 데이터를 읽지 못했습니다:', err)
+    return {
+      state: initialState,
+      error: '기존 저장 데이터를 읽지 못했습니다. 원본을 보존하기 위해 자동 저장을 중지했습니다.',
+      raw: saved,
+      numericBackup
     }
-  }, [])
+  }
+}
 
-  useEffect(() => {
+export function saveStoredState(storage, state) {
+  try {
+    const target = storage || window.localStorage
+    target.setItem(STORAGE_KEY, JSON.stringify(state))
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-    } catch {
-      // 사진이 너무 많아 quota 초과 시: 사진 제외한 수치 데이터를 보존하여 데이터 유실 방지
-      try {
-        const stripped = stripPhotosFromState(state)
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(stripped))
-        window.dispatchEvent(new CustomEvent('lwo-storage-warning', {
-          detail: '저장 용량 초과로 사진을 제외한 측정 수치 데이터만 보존되었습니다.'
-        }))
-      } catch {
-        // 완전 실패 시 무시
-      }
+      target.removeItem(MEASUREMENT_BACKUP_KEY)
+    } catch (err) {
+      console.warn('이전 수치 임시 백업을 정리하지 못했습니다:', err)
     }
-  }, [state])
+    return ''
+  } catch (err) {
+    console.error('LWO 전체 데이터 자동 저장 실패:', err)
+    try {
+      const target = storage || window.localStorage
+      target.setItem(MEASUREMENT_BACKUP_KEY, JSON.stringify(stripPhotosFromState(state)))
+      return '전체 자동 저장에 실패했습니다. 기존 저장본은 유지되며, 사진을 제외한 수치만 별도 임시 보관되었습니다. JSON 파일로 전체 데이터를 저장하세요.'
+    } catch (backupError) {
+      console.error('LWO 수치 임시 백업 실패:', backupError)
+      return '자동 저장과 임시 백업이 모두 실패했습니다. 현재 데이터를 JSON 파일로 즉시 저장하세요.'
+    }
+  }
+}
+
+export function useAppState() {
+  const [initialLoad] = useState(() => loadStoredState())
+  const [state, setState] = useState(initialLoad.state)
+  const [numericBackup, setNumericBackup] = useState(initialLoad.numericBackup)
+  const [storageBlocked, setStorageBlocked] = useState(Boolean(initialLoad.error || initialLoad.numericBackup))
+  const [storageWarning, setStorageWarning] = useState(initialLoad.error || (initialLoad.numericBackup
+    ? '이전에 전체 저장에 실패한 수치 임시 백업이 있습니다. 복구 방법을 선택하기 전까지 자동 저장을 중지합니다.'
+    : ''))
+
+  useEffect(() => {
+    if (storageBlocked) return
+    const warning = saveStoredState(undefined, state)
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reflect the result of persistent storage.
+    setStorageWarning(warning)
+  }, [state, storageBlocked])
 
   const updateWorker = useCallback(u => setState(s => {
     const active = s.worker.activePersonnel
@@ -1190,7 +1271,8 @@ export function useAppState() {
   }, [])
 
   return {
-    state, setState,
+    state, setState, storageWarning, storageBlocked, setStorageBlocked,
+    rawStoredData: initialLoad.raw, storageReadError: initialLoad.error, numericBackup, setNumericBackup,
     updateWorker, updateElevator, updateArea, updateInventory, updateAmr,
     updateLogisticsPersonnel, updateWarehouseArea, updateAutomationRate,
     addPhoto, removePhoto,
